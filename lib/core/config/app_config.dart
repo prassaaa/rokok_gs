@@ -2,7 +2,7 @@
 enum Environment { development, staging, production }
 
 class AppConfig {
-  static Environment _environment = Environment.production;
+  static Environment _environment = Environment.development;
 
   static void setEnvironment(Environment env) {
     _environment = env;
@@ -18,7 +18,9 @@ class AppConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'http://localhost:8000';
+        // Gunakan 10.0.2.2 untuk Android Emulator (alias ke localhost host)
+        // Atau gunakan IP komputer Anda jika testing di device fisik
+        return 'http://10.0.2.2:8000';
       case Environment.staging:
         return 'https://staging-api.rokokgs.com';
       case Environment.production:
