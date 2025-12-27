@@ -2,7 +2,7 @@
 enum Environment { development, staging, production }
 
 class AppConfig {
-  static Environment _environment = Environment.development;
+  static Environment _environment = Environment.production;
 
   static void setEnvironment(Environment env) {
     _environment = env;
@@ -22,7 +22,7 @@ class AppConfig {
       case Environment.staging:
         return 'https://staging-api.rokokgs.com';
       case Environment.production:
-        return 'https://api.rokokgs.com';
+        return 'https://rokokgs.kedjora.com';
     }
   }
 
