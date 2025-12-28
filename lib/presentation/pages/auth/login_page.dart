@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/asset_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/validators.dart';
 import '../../bloc/auth/auth_bloc.dart';
@@ -105,19 +106,12 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildHeader(ThemeData theme) {
     return Column(
       children: [
-        // App Icon
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(
-            Icons.store,
-            size: 48,
-            color: Colors.white,
-          ),
+        // App Logo
+        Image.asset(
+          AssetConstants.logo,
+          width: 100,
+          height: 100,
+          fit: BoxFit.contain,
         ),
         const SizedBox(height: 24),
         Text(

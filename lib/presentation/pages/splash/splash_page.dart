@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/asset_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
@@ -100,25 +101,11 @@ class _SplashPageState extends State<SplashPage>
                 },
                 child: Column(
                   children: [
-                    Container(
+                    Image.asset(
+                      AssetConstants.logo,
                       width: 120,
                       height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.store,
-                        size: 60,
-                        color: theme.colorScheme.primary,
-                      ),
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 24),
                     Text(
