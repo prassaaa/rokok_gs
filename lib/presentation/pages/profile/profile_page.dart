@@ -364,16 +364,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const Divider(height: 1),
           _buildMenuItem(
-            icon: Icons.lock_outline,
-            label: 'Ubah Password',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Gunakan Edit Profil untuk mengubah password')),
-              );
-            },
-          ),
-          const Divider(height: 1),
-          _buildMenuItem(
             icon: Icons.info_outline,
             label: 'Tentang Aplikasi',
             onTap: () {
