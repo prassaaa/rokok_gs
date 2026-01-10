@@ -105,22 +105,38 @@ class StockHistoryModel extends StockHistory {
 
   factory StockHistoryModel.fromJson(Map<String, dynamic> json) {
     return StockHistoryModel(
-      id: json['id'] as int,
-      stockId: json['stock_id'] as int,
-      quantityBefore: json['quantity_before'] as int? ?? 0,
-      quantityAfter: json['quantity_after'] as int? ?? 0,
-      quantityChange: json['quantity_change'] as int? ?? 0,
+      id: _parseIntRequired(json['id']),
+      stockId: _parseIntRequired(json['stock_id']),
+      quantityBefore: _parseIntRequired(json['quantity_before']),
+      quantityAfter: _parseIntRequired(json['quantity_after']),
+      quantityChange: _parseIntRequired(json['quantity_change']),
       changeType: StockChangeTypeX.fromString(
-        json['change_type'] as String? ?? 'adjustment',
+        json['change_type']?.toString() ?? 'adjustment',
       ),
-      referenceType: json['reference_type'] as String?,
-      referenceId: json['reference_id'] as int?,
-      notes: json['notes'] as String?,
+      referenceType: json['reference_type']?.toString(),
+      referenceId: _parseIntNullable(json['reference_id']),
+      notes: json['notes']?.toString(),
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      createdBy: json['created_by']?['name'] as String? ?? json['created_by_name'] as String?,
+      createdBy: json['created_by']?['name']?.toString() ?? json['created_by_name']?.toString(),
     );
+  }
+
+  static int _parseIntRequired(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static int? _parseIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toJson() => {
