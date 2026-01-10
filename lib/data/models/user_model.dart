@@ -12,12 +12,20 @@ class BranchModel extends Branch {
 
   factory BranchModel.fromJson(Map<String, dynamic> json) {
     return BranchModel(
-      id: json['id'] ?? 0,
+      id: _parseInt(json['id']),
       name: json['name'] ?? '',
       code: json['code'],
       address: json['address'],
-      isActive: json['is_active'] ?? true,
+      isActive: json['is_active'] == true || json['is_active'] == 1 || json['is_active'] == '1',
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -51,12 +59,20 @@ class AreaModel extends Area {
 
   factory AreaModel.fromJson(Map<String, dynamic> json) {
     return AreaModel(
-      id: json['id'] ?? 0,
+      id: _parseInt(json['id']),
       name: json['name'] ?? '',
       code: json['code'],
       description: json['description'],
-      isActive: json['is_active'] ?? true,
+      isActive: json['is_active'] == true || json['is_active'] == 1 || json['is_active'] == '1',
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -96,12 +112,12 @@ class UserModel extends User {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] ?? 0,
+      id: _parseInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'],
       avatar: json['avatar'],
-      isActive: json['is_active'] ?? true,
+      isActive: json['is_active'] == true || json['is_active'] == 1 || json['is_active'] == '1',
       branch: json['branch'] != null
           ? BranchModel.fromJson(json['branch']).toEntity()
           : null,
@@ -120,6 +136,14 @@ class UserModel extends User {
           ? DateTime.tryParse(json['updated_at'])
           : null,
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   Map<String, dynamic> toJson() {

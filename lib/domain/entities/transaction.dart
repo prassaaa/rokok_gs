@@ -72,6 +72,7 @@ class Transaction extends Equatable {
   final double total;
   final TransactionStatus status;
   final String? notes;
+  final String? proofPhoto;
   final User? sales;
   final Area? area;
   final DateTime? createdAt;
@@ -99,6 +100,7 @@ class Transaction extends Equatable {
     required this.total,
     this.status = TransactionStatus.completed,
     this.notes,
+    this.proofPhoto,
     this.sales,
     this.area,
     this.createdAt,
@@ -155,6 +157,7 @@ class Transaction extends Equatable {
         total,
         status,
         notes,
+        proofPhoto,
         sales,
         area,
         createdAt,

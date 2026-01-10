@@ -13,12 +13,20 @@ class CategoryModel extends Category {
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(
-      id: json['id'] ?? 0,
+      id: _parseInt(json['id']),
       name: json['name'] ?? '',
       description: json['description'],
       image: json['image'],
-      isActive: json['is_active'] ?? true,
+      isActive: json['is_active'] == true || json['is_active'] == 1 || json['is_active'] == '1',
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -62,7 +70,7 @@ class ProductModel extends Product {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: json['id'] ?? 0,
+      id: _parseInt(json['id']),
       name: json['name'] ?? '',
       sku: json['sku'] ?? json['code'],
       barcode: json['barcode'],
@@ -78,7 +86,7 @@ class ProductModel extends Product {
       stock: _parseStock(json['stock']),
       minStock: _parseMinStock(json['stock'], json['min_stock']),
       unit: json['unit'],
-      isActive: json['is_active'] ?? true,
+      isActive: json['is_active'] == true || json['is_active'] == 1 || json['is_active'] == '1',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,
@@ -86,6 +94,14 @@ class ProductModel extends Product {
           ? DateTime.tryParse(json['updated_at'])
           : null,
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   /// Parse image - handles both String and Map (image object from API)

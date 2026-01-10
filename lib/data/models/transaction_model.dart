@@ -72,16 +72,24 @@ class TransactionItemModel extends TransactionItem {
 
   factory TransactionItemModel.fromJson(Map<String, dynamic> json) {
     return TransactionItemModel(
-      id: json['id'] ?? 0,
-      productId: json['product_id'] ?? 0,
+      id: _parseInt(json['id']),
+      productId: _parseInt(json['product_id']),
       productName: json['product_name'] ?? json['product']?['name'] ?? '',
       price: _parseDouble(json['price']),
-      quantity: json['quantity'] ?? 0,
+      quantity: _parseInt(json['quantity']),
       subtotal: _parseDouble(json['subtotal']),
       product: json['product'] != null
           ? ProductModel.fromJson(json['product']).toEntity()
           : null,
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   static double _parseDouble(dynamic value) {
@@ -137,6 +145,7 @@ class TransactionModel extends Transaction {
     required super.total,
     super.status,
     super.notes,
+    super.proofPhoto,
     super.sales,
     super.area,
     super.createdAt,
@@ -145,13 +154,13 @@ class TransactionModel extends Transaction {
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     return TransactionModel(
-      id: json['id'] ?? 0,
+      id: _parseInt(json['id']),
       invoiceNumber: json['invoice_number'],
-      salesId: json['sales_id'] ?? 0,
+      salesId: _parseInt(json['sales_id']),
       salesName: json['sales_name'] ?? json['sales']?['name'],
-      areaId: json['area_id'],
+      areaId: _parseIntNullable(json['area_id']),
       areaName: json['area_name'] ?? json['area']?['name'],
-      customerId: json['customer_id'],
+      customerId: _parseIntNullable(json['customer_id']),
       customerName: json['customer_name'],
       customerPhone: json['customer_phone'],
       customerAddress: json['customer_address'],
@@ -174,6 +183,7 @@ class TransactionModel extends Transaction {
       total: _parseDouble(json['total']),
       status: TransactionStatusX.fromString(json['status']),
       notes: json['notes'],
+      proofPhoto: json['proof_photo'],
       sales: json['sales'] != null
           ? UserModel.fromJson(json['sales']).toEntity()
           : null,
@@ -187,6 +197,22 @@ class TransactionModel extends Transaction {
           ? DateTime.tryParse(json['updated_at'])
           : null,
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static int? _parseIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   static double _parseDouble(dynamic value) {
@@ -250,6 +276,7 @@ class TransactionModel extends Transaction {
         total: total,
         status: status,
         notes: notes,
+        proofPhoto: proofPhoto,
         sales: sales,
         area: area,
         createdAt: createdAt,
