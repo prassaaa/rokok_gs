@@ -98,11 +98,14 @@ class CustomButton extends StatelessWidget {
           prefixIcon!,
           const SizedBox(width: 8),
         ],
-        Text(
-          text,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
+        Flexible(
+          child: Text(
+            text,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         if (suffixIcon != null) ...[
