@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/bluetooth_print_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../di/injection_container.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../bloc/transaction/transaction_bloc.dart';
 import '../../bloc/transaction/transaction_event.dart';
 import '../../bloc/transaction/transaction_state.dart';
 import '../../widgets/error_widget.dart';
 import '../../widgets/loading_widget.dart';
+import '../../widgets/printer_dialog.dart';
 
 /// Transaction detail page
 class TransactionDetailPage extends StatefulWidget {
@@ -24,6 +27,9 @@ class TransactionDetailPage extends StatefulWidget {
 }
 
 class _TransactionDetailPageState extends State<TransactionDetailPage> {
+  final BluetoothPrintService _printService = sl<BluetoothPrintService>();
+  bool _isPrinting = false;
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +44,11 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
       appBar: AppBar(
         title: const Text('Detail Transaksi'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            onPressed: () => _showPrintDialog(context),
+            tooltip: 'Print Struk',
+          ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
             onPressed: _shareTransaction,
@@ -70,18 +81,25 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
   }
 
   Widget _buildContent(Transaction transaction) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildHeader(transaction),
-          _buildInfoSection(transaction),
-          _buildItemsSection(transaction),
-          _buildTotalSection(transaction),
-          if (transaction.notes != null && transaction.notes!.isNotEmpty)
-            _buildNotesSection(transaction),
-          const SizedBox(height: 24),
-        ],
-      ),
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeader(transaction),
+                _buildInfoSection(transaction),
+                _buildItemsSection(transaction),
+                _buildTotalSection(transaction),
+                if (transaction.notes != null && transaction.notes!.isNotEmpty)
+                  _buildNotesSection(transaction),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+        _buildPrintButton(transaction),
+      ],
     );
   }
 
@@ -458,5 +476,116 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Fitur berbagi akan segera hadir')),
     );
+  }
+
+  Widget _buildPrintButton(Transaction transaction) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _isPrinting ? null : () => _showPrintDialog(context),
+            icon: _isPrinting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.print),
+            label: Text(_isPrinting ? 'Mencetak...' : 'Print Struk'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showPrintDialog(BuildContext context) async {
+    final bloc = context.read<TransactionBloc>();
+    final state = bloc.state;
+    if (state is! TransactionDetailLoaded) return;
+
+    final transaction = state.transaction;
+    final isConnected = await _printService.isConnected();
+    
+    if (!mounted) return;
+    
+    if (isConnected) {
+      // Already connected, print directly
+      _printReceipt(transaction);
+    } else {
+      // Show printer selection dialog
+      final result = await showDialog<bool>(
+        context: this.context,
+        builder: (dialogContext) => PrinterDialog(
+          printService: _printService,
+          onConnected: () {},
+        ),
+      );
+
+      if (result == true && mounted) {
+        _printReceipt(transaction);
+      }
+    }
+  }
+
+  Future<void> _printReceipt(Transaction transaction) async {
+    setState(() {
+      _isPrinting = true;
+    });
+
+    try {
+      final success = await _printService.printReceipt(
+        transaction,
+        storeName: 'ROKOK GS',
+        storeAddress: 'Jl. Contoh No. 123',
+      );
+
+      if (mounted) {
+        setState(() {
+          _isPrinting = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Struk berhasil dicetak!' : 'Gagal mencetak struk',
+            ),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isPrinting = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 }

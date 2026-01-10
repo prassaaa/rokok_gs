@@ -8,6 +8,12 @@
     <!-- Internet Permission -->
     <uses-permission android:name="android.permission.INTERNET" />
     
+    <!-- Bluetooth Permissions for Thermal Printer -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    
     <application
         android:label="RokokGS"
         android:name="${applicationName}"

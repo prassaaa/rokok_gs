@@ -58,6 +58,9 @@ import '../domain/usecases/area/get_areas.dart';
 import '../domain/usecases/area/get_area_by_id.dart';
 import '../presentation/bloc/area/area_bloc.dart';
 
+// Services
+import '../core/services/bluetooth_print_service.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -71,6 +74,9 @@ Future<void> initDependencies() async {
       ));
   
   sl.registerLazySingleton(() => Connectivity());
+
+  // ========= SERVICES =========
+  sl.registerLazySingleton(() => BluetoothPrintService());
 
   // ========= CORE =========
   sl.registerLazySingleton<NetworkInfo>(
