@@ -17,19 +17,28 @@ class StockModel extends Stock {
 
   factory StockModel.fromJson(Map<String, dynamic> json) {
     return StockModel(
-      id: json['id'] as int,
-      productId: json['product_id'] as int,
-      branchId: json['branch_id'] as int,
-      quantity: json['quantity'] as int? ?? 0,
-      minStock: json['min_stock'] as int? ?? 10,
+      id: _parseInt(json['id']) ?? 0,
+      productId: _parseInt(json['product_id']) ?? 0,
+      branchId: _parseInt(json['branch_id']) ?? 0,
+      quantity: _parseInt(json['quantity']) ?? 0,
+      minStock: _parseInt(json['min_stock'] ?? json['minimum_stock']) ?? 10,
       lastUpdated: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
       product: json['product'] != null
           ? ProductModel.fromJson(json['product'] as Map<String, dynamic>)
           : null,
-      branchName: json['branch']?['name'] as String? ?? json['branch_name'] as String?,
+      branchName: json['branch']?['name']?.toString() ?? json['branch_name']?.toString(),
     );
+  }
+
+  /// Safely parse int from dynamic value
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toJson() => {
