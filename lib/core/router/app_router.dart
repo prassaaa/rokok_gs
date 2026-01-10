@@ -16,6 +16,7 @@ import '../../presentation/pages/home/home_page.dart';
 import '../../presentation/pages/product/product_detail_page.dart';
 import '../../presentation/pages/product/product_list_page.dart';
 import '../../presentation/pages/profile/profile_page.dart';
+import '../../presentation/pages/profile/profile_edit_page.dart';
 import '../../presentation/pages/splash/splash_page.dart';
 import '../../presentation/pages/stock/stock_list_page.dart';
 import '../../presentation/pages/transaction/transaction_detail_page.dart';
@@ -150,6 +151,13 @@ class AppRouter {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfilePage(),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: 'edit-profile',
+            builder: (context, state) => const ProfileEditPage(),
+          ),
+        ],
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
