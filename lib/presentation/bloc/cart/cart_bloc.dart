@@ -23,6 +23,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<UpdateCartArea>(_onUpdateCartArea);
     on<UpdateDiscount>(_onUpdateDiscount);
     on<UpdateNotes>(_onUpdateNotes);
+    on<UpdateProofPhoto>(_onUpdateProofPhoto);
     on<ClearCart>(_onClearCart);
     on<SubmitTransaction>(_onSubmitTransaction);
   }
@@ -206,6 +207,16 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     emit(currentState.copyWith(
       notes: event.notes,
       clearNotes: event.notes == null || event.notes!.isEmpty,
+    ));
+  }
+
+  void _onUpdateProofPhoto(UpdateProofPhoto event, Emitter<CartState> emit) {
+    final currentState = _getCurrentState();
+    if (currentState == null) return;
+
+    emit(currentState.copyWith(
+      proofPhotoPath: event.photoPath,
+      clearProofPhoto: event.photoPath == null,
     ));
   }
 

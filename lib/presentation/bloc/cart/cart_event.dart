@@ -153,6 +153,16 @@ class UpdateNotes extends CartEvent {
   List<Object?> get props => [notes];
 }
 
+/// Update proof photo
+class UpdateProofPhoto extends CartEvent {
+  final String? photoPath;
+
+  const UpdateProofPhoto(this.photoPath);
+
+  @override
+  List<Object?> get props => [photoPath];
+}
+
 /// Clear cart
 class ClearCart extends CartEvent {
   const ClearCart();

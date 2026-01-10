@@ -200,6 +200,7 @@ class CreateTransactionParams extends Equatable {
   final double discount;
   final double total;
   final String? notes;
+  final String? proofPhotoPath; // Path to proof photo file
 
   const CreateTransactionParams({
     this.areaId,
@@ -216,6 +217,7 @@ class CreateTransactionParams extends Equatable {
     this.discount = 0,
     required this.total,
     this.notes,
+    this.proofPhotoPath,
   });
 
   Map<String, dynamic> toJson() => {
@@ -252,5 +254,6 @@ class CreateTransactionParams extends Equatable {
         discount,
         total,
         notes,
+        proofPhotoPath,
       ];
 }

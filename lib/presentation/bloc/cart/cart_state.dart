@@ -70,6 +70,7 @@ class CartActive extends CartState {
   final int? areaId;
   final double discount;
   final String? notes;
+  final String? proofPhotoPath;
   final bool isSubmitting;
   final String? error;
 
@@ -85,6 +86,7 @@ class CartActive extends CartState {
     this.areaId,
     this.discount = 0,
     this.notes,
+    this.proofPhotoPath,
     this.isSubmitting = false,
     this.error,
   });
@@ -147,6 +149,7 @@ class CartActive extends CartState {
     int? areaId,
     double? discount,
     String? notes,
+    String? proofPhotoPath,
     bool? isSubmitting,
     String? error,
     bool clearCustomerId = false,
@@ -157,6 +160,7 @@ class CartActive extends CartState {
     bool clearPaymentMethod = false,
     bool clearAreaId = false,
     bool clearNotes = false,
+    bool clearProofPhoto = false,
     bool clearError = false,
   }) {
     return CartActive(
@@ -175,6 +179,7 @@ class CartActive extends CartState {
       areaId: clearAreaId ? null : areaId ?? this.areaId,
       discount: discount ?? this.discount,
       notes: clearNotes ? null : notes ?? this.notes,
+      proofPhotoPath: clearProofPhoto ? null : proofPhotoPath ?? this.proofPhotoPath,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       error: clearError ? null : error ?? this.error,
     );
@@ -196,6 +201,7 @@ class CartActive extends CartState {
       discount: discount,
       total: total,
       notes: notes,
+      proofPhotoPath: proofPhotoPath,
     );
   }
 
@@ -212,6 +218,7 @@ class CartActive extends CartState {
         areaId,
         discount,
         notes,
+        proofPhotoPath,
         isSubmitting,
         error,
       ];

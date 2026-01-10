@@ -142,10 +142,32 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     CreateTransactionParams params,
   ) async {
     try {
-      final response = await apiClient.dio.post(
-        ApiConstants.transactions,
-        data: params.toJson(),
-      );
+      Response response;
+      
+      if (params.proofPhotoPath != null) {
+        // Use multipart form data when there's a photo
+        final formData = FormData.fromMap({
+          ...params.toJson(),
+          // Convert items to JSON string for multipart
+          'items': params.items.map((e) => e.toJson()).toList(),
+          'proof_photo': await MultipartFile.fromFile(
+            params.proofPhotoPath!,
+            filename: 'proof_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ),
+        });
+        
+        response = await apiClient.dio.post(
+          ApiConstants.transactions,
+          data: formData,
+          options: Options(contentType: 'multipart/form-data'),
+        );
+      } else {
+        // Regular JSON request without photo
+        response = await apiClient.dio.post(
+          ApiConstants.transactions,
+          data: params.toJson(),
+        );
+      }
 
       final data = response.data;
       if (data['success'] == true) {
