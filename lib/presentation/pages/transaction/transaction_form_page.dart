@@ -967,68 +967,77 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   }
 
   void _showProductPicker() {
+    final productBloc = context.read<ProductBloc>();
+    final cartBloc = context.read<CartBloc>();
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
+      builder: (bottomSheetContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: productBloc),
+          BlocProvider.value(value: cartBloc),
+        ],
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SearchTextField(
-                    hint: 'Cari produk...',
-                    onChanged: (query) {
-                      context.read<ProductBloc>().add(ProductsSearchChanged(query));
-                    },
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SearchTextField(
+                      hint: 'Cari produk...',
+                      onChanged: (query) {
+                        context.read<ProductBloc>().add(ProductsSearchChanged(query));
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: BlocBuilder<ProductBloc, ProductState>(
-                    builder: (context, state) {
-                      if (state.status == ProductStatus.loading) {
-                        return const Center(child: LoadingIndicator());
-                      }
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: BlocBuilder<ProductBloc, ProductState>(
+                      builder: (context, state) {
+                        if (state.status == ProductStatus.loading) {
+                          return const Center(child: LoadingIndicator());
+                        }
 
-                      if (state.status == ProductStatus.loaded ||
-                          state.products.isNotEmpty) {
-                        return ListView.builder(
-                          controller: scrollController,
-                          itemCount: state.products.length,
-                          itemBuilder: (context, index) {
-                            final product = state.products[index];
-                            return _buildProductPickerItem(product);
-                          },
-                        );
-                      }
+                        if (state.status == ProductStatus.loaded ||
+                            state.products.isNotEmpty) {
+                          return ListView.builder(
+                            controller: scrollController,
+                            itemCount: state.products.length,
+                            itemBuilder: (context, index) {
+                              final product = state.products[index];
+                              return _buildProductPickerItem(product);
+                            },
+                          );
+                        }
 
-                      return const Center(child: Text('Gagal memuat produk'));
-                    },
+                        return const Center(child: Text('Gagal memuat produk'));
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
