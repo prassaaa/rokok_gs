@@ -156,7 +156,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
             const SizedBox(height: 16),
             CustomTextField(
               controller: _customerNameController,
-              label: 'Nama Pelanggan (Opsional)',
+              label: 'Nama Pelanggan',
               hint: 'Masukkan nama pelanggan',
               prefixIcon: const Icon(Icons.person_outline),
               onChanged: (value) {
@@ -168,7 +168,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
             const SizedBox(height: 12),
             CustomTextField(
               controller: _customerPhoneController,
-              label: 'No. Telepon (Opsional)',
+              label: 'No. Telepon',
               hint: 'Masukkan nomor telepon',
               prefixIcon: const Icon(Icons.phone_outlined),
               keyboardType: TextInputType.phone,
@@ -181,7 +181,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
             const SizedBox(height: 12),
             CustomTextField(
               controller: _customerAddressController,
-              label: 'Alamat (Opsional)',
+              label: 'Alamat',
               hint: 'Masukkan alamat pelanggan',
               prefixIcon: const Icon(Icons.location_on_outlined),
               maxLines: 2,
@@ -693,7 +693,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
             const SizedBox(height: 16),
             CustomTextField(
               controller: _notesController,
-              label: 'Catatan (Opsional)',
+              label: 'Catatan',
               hint: 'Tambahkan catatan transaksi',
               maxLines: 3,
               onChanged: (value) {
