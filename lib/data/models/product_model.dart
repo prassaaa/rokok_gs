@@ -1,4 +1,5 @@
 import '../../domain/entities/product.dart';
+import '../../core/config/app_config.dart';
 
 /// Category model - data layer
 class CategoryModel extends Category {
@@ -88,14 +89,32 @@ class ProductModel extends Product {
   }
 
   /// Parse image - handles both String and Map (image object from API)
+  /// Converts relative paths to full URLs using base URL
   static String? _parseImage(dynamic value) {
     if (value == null) return null;
-    if (value is String) return value;
-    // Handle image as object: { "url": "/storage/...", "path": "..." }
-    if (value is Map<String, dynamic>) {
-      return value['url'] as String?;
+    
+    String? imagePath;
+    
+    if (value is String) {
+      imagePath = value;
+    } else if (value is Map<String, dynamic>) {
+      // Handle image as object: { "url": "/storage/...", "path": "..." }
+      imagePath = value['url'] as String?;
     }
-    return null;
+    
+    if (imagePath == null || imagePath.isEmpty) return null;
+    
+    // If already a full URL, return as is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // Convert relative path to full URL
+    // Remove leading slash if present to avoid double slashes
+    if (imagePath.startsWith('/')) {
+      return '${AppConfig.baseUrl}$imagePath';
+    }
+    return '${AppConfig.baseUrl}/$imagePath';
   }
 
   /// Parse stock - handles both int and Maps (stock object from API)
