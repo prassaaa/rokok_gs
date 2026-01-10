@@ -5,12 +5,11 @@ import '../../../domain/repositories/stock_repository.dart';
 import 'stock_event.dart';
 import 'stock_state.dart';
 
-/// BLoC for managing stock state
+/// BLoC for managing stock state (READ-ONLY - API only supports GET)
 class StockBloc extends Bloc<StockEvent, StockState> {
   final GetStocksUseCase _getStocksUseCase;
   final GetLowStocksUseCase _getLowStocksUseCase;
   final GetStockByProductUseCase _getStockByProductUseCase;
-  final UpdateStockUseCase _updateStockUseCase;
   final StockRepository _repository;
 
   static const int _perPage = 20;
@@ -19,19 +18,16 @@ class StockBloc extends Bloc<StockEvent, StockState> {
     required GetStocksUseCase getStocksUseCase,
     required GetLowStocksUseCase getLowStocksUseCase,
     required GetStockByProductUseCase getStockByProductUseCase,
-    required UpdateStockUseCase updateStockUseCase,
     required StockRepository repository,
   })  : _getStocksUseCase = getStocksUseCase,
         _getLowStocksUseCase = getLowStocksUseCase,
         _getStockByProductUseCase = getStockByProductUseCase,
-        _updateStockUseCase = updateStockUseCase,
         _repository = repository,
         super(StockState.initial()) {
     on<StocksLoadRequested>(_onStocksLoadRequested);
     on<LowStocksLoadRequested>(_onLowStocksLoadRequested);
     on<StocksLoadMoreRequested>(_onStocksLoadMoreRequested);
     on<StocksSearchChanged>(_onStocksSearchChanged);
-    on<StockUpdateRequested>(_onStockUpdateRequested);
     on<StockByProductRequested>(_onStockByProductRequested);
     on<StockErrorCleared>(_onStockErrorCleared);
   }
@@ -155,47 +151,7 @@ class StockBloc extends Bloc<StockEvent, StockState> {
       )),
     );
   }
-
-  Future<void> _onStockUpdateRequested(
-    StockUpdateRequested event,
-    Emitter<StockState> emit,
-  ) async {
-    emit(state.copyWith(status: StockStatus.loading, clearError: true));
-
-    final result = await _updateStockUseCase(event.params);
-
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: StockStatus.error,
-        errorMessage: failure.message,
-      )),
-      (updatedStock) {
-        // Update stock in list
-        final updatedStocks = state.stocks.map((stock) {
-          if (stock.id == updatedStock.id) {
-            return updatedStock;
-          }
-          return stock;
-        }).toList();
-
-        // Update low stocks list too
-        final updatedLowStocks = state.lowStocks.map((stock) {
-          if (stock.id == updatedStock.id) {
-            return updatedStock;
-          }
-          return stock;
-        }).toList();
-
-        emit(state.copyWith(
-          status: StockStatus.loaded,
-          stocks: updatedStocks,
-          lowStocks: updatedLowStocks,
-          selectedStock: updatedStock,
-        ));
-      },
-    );
-  }
-
+  
   Future<void> _onStockByProductRequested(
     StockByProductRequested event,
     Emitter<StockState> emit,

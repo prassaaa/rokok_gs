@@ -32,6 +32,32 @@ extension TransactionStatusX on TransactionStatus {
   }
 }
 
+/// Payment method extension
+extension PaymentMethodX on PaymentMethod {
+  String get value {
+    switch (this) {
+      case PaymentMethod.cash:
+        return 'cash';
+      case PaymentMethod.transfer:
+        return 'transfer';
+      case PaymentMethod.credit:
+        return 'credit';
+    }
+  }
+
+  static PaymentMethod fromString(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'transfer':
+        return PaymentMethod.transfer;
+      case 'credit':
+        return PaymentMethod.credit;
+      case 'cash':
+      default:
+        return PaymentMethod.cash;
+    }
+  }
+}
+
 /// Transaction item model
 class TransactionItemModel extends TransactionItem {
   const TransactionItemModel({
@@ -98,6 +124,11 @@ class TransactionModel extends Transaction {
     super.areaName,
     super.customerId,
     super.customerName,
+    super.customerPhone,
+    super.customerAddress,
+    super.latitude,
+    super.longitude,
+    super.paymentMethod,
     required super.transactionDate,
     super.items,
     required super.subtotal,
@@ -122,6 +153,13 @@ class TransactionModel extends Transaction {
       areaName: json['area_name'] ?? json['area']?['name'],
       customerId: json['customer_id'],
       customerName: json['customer_name'],
+      customerPhone: json['customer_phone'],
+      customerAddress: json['customer_address'],
+      latitude: _parseDoubleNullable(json['latitude']),
+      longitude: _parseDoubleNullable(json['longitude']),
+      paymentMethod: json['payment_method'] != null
+          ? PaymentMethodX.fromString(json['payment_method'])
+          : null,
       transactionDate: json['transaction_date'] != null
           ? DateTime.parse(json['transaction_date'])
           : DateTime.now(),
@@ -158,6 +196,13 @@ class TransactionModel extends Transaction {
     return 0;
   }
 
+  static double? _parseDoubleNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -168,6 +213,11 @@ class TransactionModel extends Transaction {
       'area_name': areaName,
       'customer_id': customerId,
       'customer_name': customerName,
+      'customer_phone': customerPhone,
+      'customer_address': customerAddress,
+      'latitude': latitude,
+      'longitude': longitude,
+      'payment_method': paymentMethod?.value,
       'transaction_date': transactionDate.toIso8601String(),
       'subtotal': subtotal,
       'discount': discount,
@@ -187,6 +237,11 @@ class TransactionModel extends Transaction {
         areaName: areaName,
         customerId: customerId,
         customerName: customerName,
+        customerPhone: customerPhone,
+        customerAddress: customerAddress,
+        latitude: latitude,
+        longitude: longitude,
+        paymentMethod: paymentMethod,
         transactionDate: transactionDate,
         items: items,
         subtotal: subtotal,

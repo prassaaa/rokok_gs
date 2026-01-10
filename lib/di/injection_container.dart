@@ -24,7 +24,6 @@ import '../presentation/bloc/auth/auth_bloc.dart';
 import '../data/datasources/remote/product_remote_datasource.dart';
 import '../data/repositories/product_repository_impl.dart';
 import '../domain/repositories/product_repository.dart';
-import '../domain/usecases/product/get_categories_usecase.dart';
 import '../domain/usecases/product/get_product_detail_usecase.dart';
 import '../domain/usecases/product/get_products_usecase.dart';
 import '../presentation/bloc/product/product_bloc.dart';
@@ -35,7 +34,6 @@ import '../data/repositories/transaction_repository_impl.dart';
 import '../domain/repositories/transaction_repository.dart';
 import '../domain/usecases/transaction/create_transaction.dart';
 import '../domain/usecases/transaction/get_sales_transactions.dart';
-import '../domain/usecases/transaction/get_today_summary.dart';
 import '../domain/usecases/transaction/get_transaction_detail.dart';
 import '../domain/usecases/transaction/get_transactions.dart';
 import '../presentation/bloc/cart/cart_bloc.dart';
@@ -48,16 +46,9 @@ import '../domain/repositories/stock_repository.dart';
 import '../domain/usecases/stock/get_low_stocks_usecase.dart';
 import '../domain/usecases/stock/get_stock_by_product_usecase.dart';
 import '../domain/usecases/stock/get_stocks_usecase.dart';
-import '../domain/usecases/stock/update_stock_usecase.dart';
+// Update Stock - DISABLED: API only supports GET operations
+// import '../domain/usecases/stock/update_stock_usecase.dart';
 import '../presentation/bloc/stock/stock_bloc.dart';
-
-// Commission
-import '../data/datasources/remote/commission_remote_datasource.dart';
-import '../data/repositories/commission_repository_impl.dart';
-import '../domain/repositories/commission_repository.dart';
-import '../domain/usecases/commission/get_commissions_usecase.dart';
-import '../domain/usecases/commission/get_commission_summary_usecase.dart';
-import '../presentation/bloc/commission/commission_bloc.dart';
 
 // Area
 import '../data/datasources/remote/area_remote_datasource.dart';
@@ -115,11 +106,6 @@ Future<void> initDependencies() async {
     () => StockRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
-  // Commission
-  sl.registerLazySingleton<CommissionRemoteDataSource>(
-    () => CommissionRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
-  );
-
   // Area
   sl.registerLazySingleton<AreaRemoteDataSource>(
     () => AreaRemoteDataSourceImpl(sl<ApiClient>()),
@@ -155,13 +141,6 @@ Future<void> initDependencies() async {
     ),
   );
 
-  sl.registerLazySingleton<CommissionRepository>(
-    () => CommissionRepositoryImpl(
-      remoteDataSource: sl<CommissionRemoteDataSource>(),
-      networkInfo: sl<NetworkInfo>(),
-    ),
-  );
-
   sl.registerLazySingleton<AreaRepository>(
     () => AreaRepositoryImpl(sl<AreaRemoteDataSource>()),
   );
@@ -179,24 +158,17 @@ Future<void> initDependencies() async {
   // Product
   sl.registerLazySingleton(() => GetProductsUseCase(sl<ProductRepository>()));
   sl.registerLazySingleton(() => GetProductDetailUseCase(sl<ProductRepository>()));
-  sl.registerLazySingleton(() => GetCategoriesUseCase(sl<ProductRepository>()));
 
   // Transaction
   sl.registerLazySingleton(() => GetTransactions(sl<TransactionRepository>()));
   sl.registerLazySingleton(() => GetTransactionDetail(sl<TransactionRepository>()));
   sl.registerLazySingleton(() => GetSalesTransactions(sl<TransactionRepository>()));
   sl.registerLazySingleton(() => CreateTransaction(sl<TransactionRepository>()));
-  sl.registerLazySingleton(() => GetTodaySummary(sl<TransactionRepository>()));
 
   // Stock
   sl.registerLazySingleton(() => GetStocksUseCase(sl<StockRepository>()));
   sl.registerLazySingleton(() => GetLowStocksUseCase(sl<StockRepository>()));
   sl.registerLazySingleton(() => GetStockByProductUseCase(sl<StockRepository>()));
-  sl.registerLazySingleton(() => UpdateStockUseCase(sl<StockRepository>()));
-
-  // Commission
-  sl.registerLazySingleton(() => GetCommissionsUseCase(sl<CommissionRepository>()));
-  sl.registerLazySingleton(() => GetCommissionSummaryUseCase(sl<CommissionRepository>()));
 
   // Area
   sl.registerLazySingleton(() => GetAreas(sl<AreaRepository>()));
@@ -219,7 +191,6 @@ Future<void> initDependencies() async {
     () => ProductBloc(
       getProductsUseCase: sl<GetProductsUseCase>(),
       getProductDetailUseCase: sl<GetProductDetailUseCase>(),
-      getCategoriesUseCase: sl<GetCategoriesUseCase>(),
     ),
   );
 
@@ -228,7 +199,6 @@ Future<void> initDependencies() async {
       getTransactions: sl<GetTransactions>(),
       getTransactionDetail: sl<GetTransactionDetail>(),
       getSalesTransactions: sl<GetSalesTransactions>(),
-      getTodaySummary: sl<GetTodaySummary>(),
     ),
   );
 
@@ -243,15 +213,7 @@ Future<void> initDependencies() async {
       getStocksUseCase: sl<GetStocksUseCase>(),
       getLowStocksUseCase: sl<GetLowStocksUseCase>(),
       getStockByProductUseCase: sl<GetStockByProductUseCase>(),
-      updateStockUseCase: sl<UpdateStockUseCase>(),
       repository: sl<StockRepository>(),
-    ),
-  );
-
-  sl.registerFactory(
-    () => CommissionBloc(
-      getCommissionsUseCase: sl<GetCommissionsUseCase>(),
-      getCommissionSummaryUseCase: sl<GetCommissionSummaryUseCase>(),
     ),
   );
 

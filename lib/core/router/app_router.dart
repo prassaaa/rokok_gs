@@ -6,14 +6,12 @@ import '../../di/injection_container.dart';
 import '../../presentation/bloc/auth/auth_bloc.dart';
 import '../../presentation/bloc/area/area_bloc.dart';
 import '../../presentation/bloc/cart/cart_bloc.dart';
-import '../../presentation/bloc/commission/commission_bloc.dart';
 import '../../presentation/bloc/product/product_bloc.dart';
 import '../../presentation/bloc/stock/stock_bloc.dart';
 import '../../presentation/bloc/transaction/transaction_bloc.dart';
 import '../../presentation/pages/area/area_list_page.dart';
 import '../../presentation/pages/auth/login_page.dart';
 import '../../presentation/pages/auth/register_page.dart';
-import '../../presentation/pages/commission/commission_list_page.dart';
 import '../../presentation/pages/home/home_page.dart';
 import '../../presentation/pages/product/product_detail_page.dart';
 import '../../presentation/pages/product/product_list_page.dart';
@@ -135,16 +133,6 @@ class AppRouter {
             },
           ),
         ],
-      ),
-
-      // Commissions
-      GoRoute(
-        path: '/commissions',
-        name: 'commissions',
-        builder: (context, state) => BlocProvider(
-          create: (context) => sl<CommissionBloc>(),
-          child: const CommissionListPage(),
-        ),
       ),
 
       // Areas

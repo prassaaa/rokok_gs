@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/product.dart';
+import '../../../domain/entities/transaction.dart';
 import '../../bloc/cart/cart_bloc.dart';
 import '../../bloc/cart/cart_event.dart';
 import '../../bloc/cart/cart_state.dart';
@@ -24,6 +25,8 @@ class TransactionFormPage extends StatefulWidget {
 
 class _TransactionFormPageState extends State<TransactionFormPage> {
   final _customerNameController = TextEditingController();
+  final _customerPhoneController = TextEditingController();
+  final _customerAddressController = TextEditingController();
   final _notesController = TextEditingController();
   final _discountController = TextEditingController();
 
@@ -37,6 +40,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   @override
   void dispose() {
     _customerNameController.dispose();
+    _customerPhoneController.dispose();
+    _customerAddressController.dispose();
     _notesController.dispose();
     _discountController.dispose();
     super.dispose();
@@ -83,6 +88,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                     onPressed: () {
                       context.read<CartBloc>().add(const ClearCart());
                       _customerNameController.clear();
+                      _customerPhoneController.clear();
+                      _customerAddressController.clear();
                       _notesController.clear();
                       _discountController.clear();
                     },
@@ -107,6 +114,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildCustomerSection(),
+                    const SizedBox(height: 20),
+                    _buildPaymentMethodSection(),
                     const SizedBox(height: 20),
                     _buildProductSection(),
                     const SizedBox(height: 20),
@@ -155,6 +164,160 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                       customerName: value.isEmpty ? null : value,
                     ));
               },
+            ),
+            const SizedBox(height: 12),
+            CustomTextField(
+              controller: _customerPhoneController,
+              label: 'No. Telepon (Opsional)',
+              hint: 'Masukkan nomor telepon',
+              prefixIcon: const Icon(Icons.phone_outlined),
+              keyboardType: TextInputType.phone,
+              onChanged: (value) {
+                context.read<CartBloc>().add(UpdateCustomerContact(
+                      customerPhone: value.isEmpty ? null : value,
+                    ));
+              },
+            ),
+            const SizedBox(height: 12),
+            CustomTextField(
+              controller: _customerAddressController,
+              label: 'Alamat (Opsional)',
+              hint: 'Masukkan alamat pelanggan',
+              prefixIcon: const Icon(Icons.location_on_outlined),
+              maxLines: 2,
+              onChanged: (value) {
+                context.read<CartBloc>().add(UpdateCustomerContact(
+                      customerAddress: value.isEmpty ? null : value,
+                    ));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodSection() {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        final selectedMethod = state is CartActive ? state.paymentMethod : null;
+        final hasError = state is CartActive && state.error != null && 
+            state.error!.contains('metode pembayaran');
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.payment_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Metode Pembayaran',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Text(
+                      ' *',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildPaymentMethodOption(
+                        method: PaymentMethod.cash,
+                        label: 'Cash',
+                        icon: Icons.money,
+                        isSelected: selectedMethod == PaymentMethod.cash,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildPaymentMethodOption(
+                        method: PaymentMethod.transfer,
+                        label: 'Transfer',
+                        icon: Icons.account_balance,
+                        isSelected: selectedMethod == PaymentMethod.transfer,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildPaymentMethodOption(
+                        method: PaymentMethod.credit,
+                        label: 'Kredit',
+                        icon: Icons.credit_card,
+                        isSelected: selectedMethod == PaymentMethod.credit,
+                      ),
+                    ),
+                  ],
+                ),
+                if (hasError) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Pilih metode pembayaran',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaymentMethodOption({
+    required PaymentMethod method,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      onTap: () {
+        context.read<CartBloc>().add(UpdatePaymentMethod(method));
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 28,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -591,7 +754,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                 Expanded(
                   child: CustomButton(
                     text: 'Simpan Transaksi',
-                    onPressed: state.isEmpty || state.isSubmitting
+                    onPressed: !state.canSubmit || state.isSubmitting
                         ? null
                         : () {
                             context

@@ -10,6 +10,13 @@ enum TransactionStatus {
   cancelled,
 }
 
+/// Payment method enum
+enum PaymentMethod {
+  cash,
+  transfer,
+  credit,
+}
+
 /// Transaction item entity
 class TransactionItem extends Equatable {
   final int id;
@@ -52,6 +59,11 @@ class Transaction extends Equatable {
   final String? areaName;
   final int? customerId;
   final String? customerName;
+  final String? customerPhone;
+  final String? customerAddress;
+  final double? latitude;
+  final double? longitude;
+  final PaymentMethod? paymentMethod;
   final DateTime transactionDate;
   final List<TransactionItem> items;
   final double subtotal;
@@ -74,6 +86,11 @@ class Transaction extends Equatable {
     this.areaName,
     this.customerId,
     this.customerName,
+    this.customerPhone,
+    this.customerAddress,
+    this.latitude,
+    this.longitude,
+    this.paymentMethod,
     required this.transactionDate,
     this.items = const [],
     required this.subtotal,
@@ -125,6 +142,11 @@ class Transaction extends Equatable {
         areaName,
         customerId,
         customerName,
+        customerPhone,
+        customerAddress,
+        latitude,
+        longitude,
+        paymentMethod,
         transactionDate,
         items,
         subtotal,
@@ -167,6 +189,11 @@ class CreateTransactionParams extends Equatable {
   final int? areaId;
   final int? customerId;
   final String? customerName;
+  final String? customerPhone;
+  final String? customerAddress;
+  final double? latitude;
+  final double? longitude;
+  final PaymentMethod paymentMethod;
   final DateTime? transactionDate;
   final List<CreateTransactionItemParams> items;
   final double discount;
@@ -176,6 +203,11 @@ class CreateTransactionParams extends Equatable {
     this.areaId,
     this.customerId,
     this.customerName,
+    this.customerPhone,
+    this.customerAddress,
+    this.latitude,
+    this.longitude,
+    required this.paymentMethod,
     this.transactionDate,
     required this.items,
     this.discount = 0,
@@ -186,6 +218,11 @@ class CreateTransactionParams extends Equatable {
         if (areaId != null) 'area_id': areaId,
         if (customerId != null) 'customer_id': customerId,
         if (customerName != null) 'customer_name': customerName,
+        if (customerPhone != null) 'customer_phone': customerPhone,
+        if (customerAddress != null) 'customer_address': customerAddress,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        'payment_method': paymentMethod.name,
         if (transactionDate != null)
           'transaction_date': transactionDate!.toIso8601String(),
         'items': items.map((e) => e.toJson()).toList(),
@@ -198,6 +235,11 @@ class CreateTransactionParams extends Equatable {
         areaId,
         customerId,
         customerName,
+        customerPhone,
+        customerAddress,
+        latitude,
+        longitude,
+        paymentMethod,
         transactionDate,
         items,
         discount,

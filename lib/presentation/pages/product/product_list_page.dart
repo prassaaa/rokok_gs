@@ -26,16 +26,12 @@ class _ProductListPageState extends State<ProductListPage> {
   void initState() {
     super.initState();
     _loadProducts();
-    _loadCategories();
+    // _loadCategories();
     _scrollController.addListener(_onScroll);
   }
 
   void _loadProducts() {
     context.read<ProductBloc>().add(const ProductsLoadRequested());
-  }
-
-  void _loadCategories() {
-    context.read<ProductBloc>().add(const CategoriesLoadRequested());
   }
 
   void _onScroll() {
@@ -86,8 +82,6 @@ class _ProductListPageState extends State<ProductListPage> {
               },
             ),
           ),
-          // Category chips
-          _buildCategoryChips(),
           // Product list
           Expanded(
             child: BlocBuilder<ProductBloc, ProductState>(
@@ -152,57 +146,6 @@ class _ProductListPageState extends State<ProductListPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildCategoryChips() {
-    return BlocBuilder<ProductBloc, ProductState>(
-      buildWhen: (previous, current) =>
-          previous.categories != current.categories ||
-          previous.selectedCategoryId != current.selectedCategoryId,
-      builder: (context, state) {
-        if (state.categories.isEmpty) return const SizedBox.shrink();
-
-        return SizedBox(
-          height: 48,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: state.categories.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                // All categories chip
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: const Text('Semua'),
-                    selected: state.selectedCategoryId == null,
-                    onSelected: (_) {
-                      context
-                          .read<ProductBloc>()
-                          .add(const ProductsCategoryChanged(null));
-                    },
-                  ),
-                );
-              }
-
-              final category = state.categories[index - 1];
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Text(category.name),
-                  selected: state.selectedCategoryId == category.id,
-                  onSelected: (_) {
-                    context
-                        .read<ProductBloc>()
-                        .add(ProductsCategoryChanged(category.id));
-                  },
-                ),
-              );
-            },
-          ),
-        );
-      },
     );
   }
 

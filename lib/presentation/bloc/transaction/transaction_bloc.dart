@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../domain/usecases/transaction/get_sales_transactions.dart';
-import '../../../domain/usecases/transaction/get_today_summary.dart';
 import '../../../domain/usecases/transaction/get_transaction_detail.dart';
 import '../../../domain/usecases/transaction/get_transactions.dart';
 import 'transaction_event.dart';
@@ -14,20 +13,18 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final GetTransactions getTransactions;
   final GetTransactionDetail getTransactionDetail;
   final GetSalesTransactions getSalesTransactions;
-  final GetTodaySummary getTodaySummary;
 
   TransactionBloc({
     required this.getTransactions,
     required this.getTransactionDetail,
     required this.getSalesTransactions,
-    required this.getTodaySummary,
+    // required this.getTodaySummary,
   }) : super(const TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadMoreTransactions>(_onLoadMoreTransactions);
     on<LoadTransactionDetail>(_onLoadTransactionDetail);
     on<LoadSalesTransactions>(_onLoadSalesTransactions);
     on<LoadMoreSalesTransactions>(_onLoadMoreSalesTransactions);
-    on<LoadTodaySummary>(_onLoadTodaySummary);
     on<FilterByStatus>(_onFilterByStatus);
     on<FilterByDateRange>(_onFilterByDateRange);
     on<ClearFilters>(_onClearFilters);
@@ -173,21 +170,6 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
         hasReachedMax: response.meta.currentPage >= response.meta.lastPage,
         isLoadingMore: false,
       )),
-    );
-  }
-
-  Future<void> _onLoadTodaySummary(
-    LoadTodaySummary event,
-    Emitter<TransactionState> emit,
-  ) async {
-    if (state is! TransactionLoaded) return;
-
-    final currentState = state as TransactionLoaded;
-    final result = await getTodaySummary();
-
-    result.fold(
-      (failure) {}, // Silent fail for summary
-      (summary) => emit(currentState.copyWith(summary: summary)),
     );
   }
 

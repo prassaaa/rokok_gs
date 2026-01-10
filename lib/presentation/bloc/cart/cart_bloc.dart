@@ -17,6 +17,9 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<IncrementCartItem>(_onIncrementCartItem);
     on<DecrementCartItem>(_onDecrementCartItem);
     on<UpdateCustomerInfo>(_onUpdateCustomerInfo);
+    on<UpdateCustomerContact>(_onUpdateCustomerContact);
+    on<UpdateLocation>(_onUpdateLocation);
+    on<UpdatePaymentMethod>(_onUpdatePaymentMethod);
     on<UpdateCartArea>(_onUpdateCartArea);
     on<UpdateDiscount>(_onUpdateDiscount);
     on<UpdateNotes>(_onUpdateNotes);
@@ -137,6 +140,48 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     ));
   }
 
+  void _onUpdateCustomerContact(
+    UpdateCustomerContact event,
+    Emitter<CartState> emit,
+  ) {
+    final currentState = _getCurrentState();
+    if (currentState == null) return;
+
+    emit(currentState.copyWith(
+      customerPhone: event.customerPhone,
+      customerAddress: event.customerAddress,
+      clearCustomerPhone: event.customerPhone == null || event.customerPhone!.isEmpty,
+      clearCustomerAddress: event.customerAddress == null || event.customerAddress!.isEmpty,
+    ));
+  }
+
+  void _onUpdateLocation(
+    UpdateLocation event,
+    Emitter<CartState> emit,
+  ) {
+    final currentState = _getCurrentState();
+    if (currentState == null) return;
+
+    emit(currentState.copyWith(
+      latitude: event.latitude,
+      longitude: event.longitude,
+      clearLocation: event.latitude == null && event.longitude == null,
+    ));
+  }
+
+  void _onUpdatePaymentMethod(
+    UpdatePaymentMethod event,
+    Emitter<CartState> emit,
+  ) {
+    final currentState = _getCurrentState();
+    if (currentState == null) return;
+
+    emit(currentState.copyWith(
+      paymentMethod: event.paymentMethod,
+      clearError: true,
+    ));
+  }
+
   void _onUpdateCartArea(UpdateCartArea event, Emitter<CartState> emit) {
     final currentState = _getCurrentState();
     if (currentState == null) return;
@@ -177,6 +222,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     if (currentState.isEmpty) {
       emit(currentState.copyWith(error: 'Keranjang kosong'));
+      return;
+    }
+
+    if (currentState.paymentMethod == null) {
+      emit(currentState.copyWith(error: 'Pilih metode pembayaran'));
       return;
     }
 

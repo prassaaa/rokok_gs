@@ -62,6 +62,11 @@ class CartActive extends CartState {
   final List<CartItem> items;
   final int? customerId;
   final String? customerName;
+  final String? customerPhone;
+  final String? customerAddress;
+  final double? latitude;
+  final double? longitude;
+  final PaymentMethod? paymentMethod;
   final int? areaId;
   final double discount;
   final String? notes;
@@ -72,6 +77,11 @@ class CartActive extends CartState {
     this.items = const [],
     this.customerId,
     this.customerName,
+    this.customerPhone,
+    this.customerAddress,
+    this.latitude,
+    this.longitude,
+    this.paymentMethod,
     this.areaId,
     this.discount = 0,
     this.notes,
@@ -93,6 +103,9 @@ class CartActive extends CartState {
 
   /// Check if cart is not empty
   bool get isNotEmpty => items.isNotEmpty;
+
+  /// Check if can submit (has payment method)
+  bool get canSubmit => isNotEmpty && paymentMethod != null;
 
   /// Get formatted subtotal
   String get formattedSubtotal => 'Rp ${subtotal.toStringAsFixed(0)}';
@@ -126,6 +139,11 @@ class CartActive extends CartState {
     List<CartItem>? items,
     int? customerId,
     String? customerName,
+    String? customerPhone,
+    String? customerAddress,
+    double? latitude,
+    double? longitude,
+    PaymentMethod? paymentMethod,
     int? areaId,
     double? discount,
     String? notes,
@@ -133,6 +151,10 @@ class CartActive extends CartState {
     String? error,
     bool clearCustomerId = false,
     bool clearCustomerName = false,
+    bool clearCustomerPhone = false,
+    bool clearCustomerAddress = false,
+    bool clearLocation = false,
+    bool clearPaymentMethod = false,
     bool clearAreaId = false,
     bool clearNotes = false,
     bool clearError = false,
@@ -142,6 +164,14 @@ class CartActive extends CartState {
       customerId: clearCustomerId ? null : customerId ?? this.customerId,
       customerName:
           clearCustomerName ? null : customerName ?? this.customerName,
+      customerPhone:
+          clearCustomerPhone ? null : customerPhone ?? this.customerPhone,
+      customerAddress:
+          clearCustomerAddress ? null : customerAddress ?? this.customerAddress,
+      latitude: clearLocation ? null : latitude ?? this.latitude,
+      longitude: clearLocation ? null : longitude ?? this.longitude,
+      paymentMethod:
+          clearPaymentMethod ? null : paymentMethod ?? this.paymentMethod,
       areaId: clearAreaId ? null : areaId ?? this.areaId,
       discount: discount ?? this.discount,
       notes: clearNotes ? null : notes ?? this.notes,
@@ -156,6 +186,11 @@ class CartActive extends CartState {
       areaId: areaId,
       customerId: customerId,
       customerName: customerName,
+      customerPhone: customerPhone,
+      customerAddress: customerAddress,
+      latitude: latitude,
+      longitude: longitude,
+      paymentMethod: paymentMethod ?? PaymentMethod.cash,
       items: items.map((e) => e.toTransactionItemParams()).toList(),
       discount: discount,
       notes: notes,
@@ -167,6 +202,11 @@ class CartActive extends CartState {
         items,
         customerId,
         customerName,
+        customerPhone,
+        customerAddress,
+        latitude,
+        longitude,
+        paymentMethod,
         areaId,
         discount,
         notes,

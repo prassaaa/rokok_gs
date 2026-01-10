@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/product.dart';
+import '../../../domain/entities/transaction.dart';
 
 /// Cart events for transaction form
 abstract class CartEvent extends Equatable {
@@ -82,6 +83,44 @@ class UpdateCustomerInfo extends CartEvent {
 
   @override
   List<Object?> get props => [customerId, customerName];
+}
+
+/// Update customer contact (phone and address)
+class UpdateCustomerContact extends CartEvent {
+  final String? customerPhone;
+  final String? customerAddress;
+
+  const UpdateCustomerContact({
+    this.customerPhone,
+    this.customerAddress,
+  });
+
+  @override
+  List<Object?> get props => [customerPhone, customerAddress];
+}
+
+/// Update location (GPS coordinates)
+class UpdateLocation extends CartEvent {
+  final double? latitude;
+  final double? longitude;
+
+  const UpdateLocation({
+    this.latitude,
+    this.longitude,
+  });
+
+  @override
+  List<Object?> get props => [latitude, longitude];
+}
+
+/// Update payment method
+class UpdatePaymentMethod extends CartEvent {
+  final PaymentMethod paymentMethod;
+
+  const UpdatePaymentMethod(this.paymentMethod);
+
+  @override
+  List<Object?> get props => [paymentMethod];
 }
 
 /// Update area

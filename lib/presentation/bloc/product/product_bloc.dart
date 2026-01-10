@@ -1,9 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../domain/usecases/product/get_categories_usecase.dart';
 import '../../../domain/usecases/product/get_product_detail_usecase.dart';
 import '../../../domain/usecases/product/get_products_usecase.dart';
-import '../../../domain/usecases/usecase.dart';
 import 'product_event.dart';
 import 'product_state.dart';
 
@@ -11,17 +9,13 @@ import 'product_state.dart';
 class ProductBloc extends Bloc<ProductEvent, ProductState> {
   final GetProductsUseCase getProductsUseCase;
   final GetProductDetailUseCase getProductDetailUseCase;
-  final GetCategoriesUseCase getCategoriesUseCase;
-
   ProductBloc({
     required this.getProductsUseCase,
     required this.getProductDetailUseCase,
-    required this.getCategoriesUseCase,
   }) : super(ProductState.initial()) {
     on<ProductsLoadRequested>(_onProductsLoadRequested);
     on<ProductsLoadMoreRequested>(_onProductsLoadMoreRequested);
     on<ProductDetailLoadRequested>(_onProductDetailLoadRequested);
-    on<CategoriesLoadRequested>(_onCategoriesLoadRequested);
     on<ProductsCategoryChanged>(_onProductsCategoryChanged);
     on<ProductsSearchChanged>(_onProductsSearchChanged);
     on<ProductsFiltersCleared>(_onProductsFiltersCleared);
@@ -110,21 +104,6 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         status: ProductStatus.loaded,
         selectedProduct: product,
       )),
-    );
-  }
-
-  /// Handle load categories
-  Future<void> _onCategoriesLoadRequested(
-    CategoriesLoadRequested event,
-    Emitter<ProductState> emit,
-  ) async {
-    final result = await getCategoriesUseCase(const NoParams());
-
-    result.fold(
-      (failure) {
-        // Categories loading failure should not affect main state
-      },
-      (categories) => emit(state.copyWith(categories: categories)),
     );
   }
 

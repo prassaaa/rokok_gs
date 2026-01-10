@@ -158,10 +158,22 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        if (state is TransactionLoaded && state.summary != null) {
+        if (state is TransactionLoaded) {
+          // Calculate summary from loaded transactions (today only)
+          final today = DateTime.now();
+          final todayTransactions = state.transactions.where((t) {
+            return t.transactionDate.year == today.year &&
+                t.transactionDate.month == today.month &&
+                t.transactionDate.day == today.day;
+          }).toList();
+          
+          final totalSales = todayTransactions.fold<double>(
+            0, (sum, t) => sum + t.total);
+          final totalTransactions = todayTransactions.length;
+
           return _buildSummaryCard(
-            totalSales: state.summary!.totalSales,
-            totalTransactions: state.summary!.totalTransactions,
+            totalSales: totalSales,
+            totalTransactions: totalTransactions,
           );
         }
 
@@ -361,12 +373,6 @@ class _HomePageState extends State<HomePage> {
         label: 'Area',
         color: AppColors.info,
         route: '/areas',
-      ),
-      _MenuItem(
-        icon: Icons.payments_outlined,
-        label: 'Komisi',
-        color: AppColors.secondary,
-        route: '/commissions',
       ),
       _MenuItem(
         icon: Icons.person_outline,

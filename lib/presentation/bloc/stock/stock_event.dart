@@ -1,7 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/entities/stock.dart';
-
 /// Base class for stock events
 abstract class StockEvent extends Equatable {
   const StockEvent();
@@ -47,16 +45,6 @@ class StocksSearchChanged extends StockEvent {
 
   @override
   List<Object?> get props => [query];
-}
-
-/// Event to update stock
-class StockUpdateRequested extends StockEvent {
-  final UpdateStockParams params;
-
-  const StockUpdateRequested(this.params);
-
-  @override
-  List<Object?> get props => [params];
 }
 
 /// Event to get stock by product
