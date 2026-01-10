@@ -196,7 +196,9 @@ class CreateTransactionParams extends Equatable {
   final PaymentMethod paymentMethod;
   final DateTime? transactionDate;
   final List<CreateTransactionItemParams> items;
+  final double subtotal;
   final double discount;
+  final double total;
   final String? notes;
 
   const CreateTransactionParams({
@@ -210,14 +212,16 @@ class CreateTransactionParams extends Equatable {
     required this.paymentMethod,
     this.transactionDate,
     required this.items,
+    required this.subtotal,
     this.discount = 0,
+    required this.total,
     this.notes,
   });
 
   Map<String, dynamic> toJson() => {
         if (areaId != null) 'area_id': areaId,
         if (customerId != null) 'customer_id': customerId,
-        if (customerName != null) 'customer_name': customerName,
+        'customer_name': customerName ?? '',
         if (customerPhone != null) 'customer_phone': customerPhone,
         if (customerAddress != null) 'customer_address': customerAddress,
         if (latitude != null) 'latitude': latitude,
@@ -226,7 +230,9 @@ class CreateTransactionParams extends Equatable {
         if (transactionDate != null)
           'transaction_date': transactionDate!.toIso8601String(),
         'items': items.map((e) => e.toJson()).toList(),
+        'subtotal': subtotal,
         'discount': discount,
+        'total': total,
         if (notes != null) 'notes': notes,
       };
 
@@ -242,7 +248,9 @@ class CreateTransactionParams extends Equatable {
         paymentMethod,
         transactionDate,
         items,
+        subtotal,
         discount,
+        total,
         notes,
       ];
 }

@@ -225,6 +225,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       return;
     }
 
+    if (currentState.customerName == null || currentState.customerName!.isEmpty) {
+      emit(currentState.copyWith(error: 'Nama pelanggan wajib diisi'));
+      return;
+    }
+
     if (currentState.paymentMethod == null) {
       emit(currentState.copyWith(error: 'Pilih metode pembayaran'));
       return;

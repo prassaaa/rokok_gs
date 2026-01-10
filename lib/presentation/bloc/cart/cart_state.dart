@@ -104,8 +104,8 @@ class CartActive extends CartState {
   /// Check if cart is not empty
   bool get isNotEmpty => items.isNotEmpty;
 
-  /// Check if can submit (has payment method)
-  bool get canSubmit => isNotEmpty && paymentMethod != null;
+  /// Check if can submit (has payment method and customer name)
+  bool get canSubmit => isNotEmpty && paymentMethod != null && customerName != null && customerName!.isNotEmpty;
 
   /// Get formatted subtotal
   String get formattedSubtotal => 'Rp ${subtotal.toStringAsFixed(0)}';
@@ -192,7 +192,9 @@ class CartActive extends CartState {
       longitude: longitude,
       paymentMethod: paymentMethod ?? PaymentMethod.cash,
       items: items.map((e) => e.toTransactionItemParams()).toList(),
+      subtotal: subtotal,
       discount: discount,
+      total: total,
       notes: notes,
     );
   }
