@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/product.dart';
@@ -29,12 +30,17 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   final _customerAddressController = TextEditingController();
   final _notesController = TextEditingController();
   final _discountController = TextEditingController();
+  
+  bool _isLoadingLocation = false;
+  String? _locationError;
 
   @override
   void initState() {
     super.initState();
     // Load products for selection
     context.read<ProductBloc>().add(const ProductsLoadRequested());
+    // Auto-get location on page load
+    _getCurrentLocation();
   }
 
   @override
@@ -45,6 +51,71 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     _notesController.dispose();
     _discountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+      _locationError = null;
+    });
+
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _locationError = 'Layanan lokasi tidak aktif';
+          _isLoadingLocation = false;
+        });
+        return;
+      }
+
+      // Check permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _locationError = 'Izin lokasi ditolak';
+            _isLoadingLocation = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _locationError = 'Izin lokasi ditolak permanen. Aktifkan di pengaturan.';
+          _isLoadingLocation = false;
+        });
+        return;
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+
+      if (mounted) {
+        context.read<CartBloc>().add(UpdateLocation(
+          latitude: position.latitude,
+          longitude: position.longitude,
+        ));
+        setState(() {
+          _isLoadingLocation = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _locationError = 'Gagal mendapatkan lokasi';
+          _isLoadingLocation = false;
+        });
+      }
+    }
   }
 
   @override
@@ -114,6 +185,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildCustomerSection(),
+                    const SizedBox(height: 20),
+                    _buildLocationSection(),
                     const SizedBox(height: 20),
                     _buildPaymentMethodSection(),
                     const SizedBox(height: 20),
@@ -194,6 +267,127 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLocationSection() {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        double? latitude;
+        double? longitude;
+        
+        if (state is CartActive) {
+          latitude = state.latitude;
+          longitude = state.longitude;
+        }
+        
+        final hasLocation = latitude != null && longitude != null;
+        
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.gps_fixed, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Lokasi GPS',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_isLoadingLocation)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      TextButton.icon(
+                        onPressed: _getCurrentLocation,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Refresh'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: hasLocation 
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : (_locationError != null 
+                            ? AppColors.error.withValues(alpha: 0.1)
+                            : AppColors.background),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: hasLocation 
+                          ? AppColors.success.withValues(alpha: 0.3)
+                          : (_locationError != null 
+                              ? AppColors.error.withValues(alpha: 0.3)
+                              : Colors.grey[300]!),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        hasLocation 
+                            ? Icons.check_circle 
+                            : (_locationError != null 
+                                ? Icons.error_outline 
+                                : Icons.location_searching),
+                        color: hasLocation 
+                            ? AppColors.success 
+                            : (_locationError != null 
+                                ? AppColors.error 
+                                : AppColors.textSecondary),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              hasLocation 
+                                  ? 'Lokasi berhasil didapatkan'
+                                  : (_locationError ?? 'Mendapatkan lokasi...'),
+                              style: TextStyle(
+                                color: hasLocation 
+                                    ? AppColors.success 
+                                    : (_locationError != null 
+                                        ? AppColors.error 
+                                        : AppColors.textSecondary),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (hasLocation) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Lat: ${latitude.toStringAsFixed(6)}, Lng: ${longitude.toStringAsFixed(6)}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
