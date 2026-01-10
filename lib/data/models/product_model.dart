@@ -72,8 +72,8 @@ class ProductModel extends Product {
       category: json['category'] != null
           ? CategoryModel.fromJson(json['category']).toEntity()
           : null,
-      stock: json['stock'] ?? 0,
-      minStock: json['min_stock'],
+      stock: _parseStock(json['stock']),
+      minStock: _parseMinStock(json['stock'], json['min_stock']),
       unit: json['unit'],
       isActive: json['is_active'] ?? true,
       createdAt: json['created_at'] != null
@@ -83,6 +83,38 @@ class ProductModel extends Product {
           ? DateTime.tryParse(json['updated_at'])
           : null,
     );
+  }
+
+  /// Parse stock - handles both int and Maps (stock object from API)
+  static int _parseStock(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is Map<String, dynamic>) {
+      return _parseStock(value['quantity']);
+    }
+    return 0;
+  }
+
+  /// Parse min_stock - can come from stock object or separate field
+  static int? _parseMinStock(dynamic stockValue, dynamic minStockValue) {
+    // First check if min_stock is provided directly
+    if (minStockValue != null) {
+      if (minStockValue is int) return minStockValue;
+      if (minStockValue is num) return minStockValue.toInt();
+      if (minStockValue is String) return int.tryParse(minStockValue);
+    }
+    // Otherwise check if stock is an object with minimum_stock
+    if (stockValue is Map<String, dynamic>) {
+      final minStock = stockValue['minimum_stock'] ?? stockValue['min_stock'];
+      if (minStock != null) {
+        if (minStock is int) return minStock;
+        if (minStock is num) return minStock.toInt();
+        if (minStock is String) return int.tryParse(minStock);
+      }
+    }
+    return null;
   }
 
   static double _parseDouble(dynamic value) {
