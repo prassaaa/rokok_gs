@@ -63,12 +63,14 @@ class ProductModel extends Product {
     return ProductModel(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      sku: json['sku'],
+      sku: json['sku'] ?? json['code'],
       barcode: json['barcode'],
       description: json['description'],
       price: _parseDouble(json['price']),
-      costPrice: json['cost_price'] != null ? _parseDouble(json['cost_price']) : null,
-      image: json['image'],
+      costPrice: json['cost_price'] != null 
+          ? _parseDouble(json['cost_price']) 
+          : (json['cost'] != null ? _parseDouble(json['cost']) : null),
+      image: _parseImage(json['image']),
       category: json['category'] != null
           ? CategoryModel.fromJson(json['category']).toEntity()
           : null,
@@ -83,6 +85,17 @@ class ProductModel extends Product {
           ? DateTime.tryParse(json['updated_at'])
           : null,
     );
+  }
+
+  /// Parse image - handles both String and Map (image object from API)
+  static String? _parseImage(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    // Handle image as object: { "url": "/storage/...", "path": "..." }
+    if (value is Map<String, dynamic>) {
+      return value['url'] as String?;
+    }
+    return null;
   }
 
   /// Parse stock - handles both int and Maps (stock object from API)
