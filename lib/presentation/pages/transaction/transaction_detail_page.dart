@@ -367,13 +367,6 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
                   valueColor: AppColors.error,
                 ),
               ],
-              if (transaction.tax > 0) ...[
-                const SizedBox(height: 8),
-                _buildTotalRow(
-                  'Pajak',
-                  'Rp ${transaction.tax.toStringAsFixed(0)}',
-                ),
-              ],
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Divider(),
@@ -524,15 +517,14 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     if (state is! TransactionDetailLoaded) return;
 
     final transaction = state.transaction;
-    final isConnected = await _printService.isConnected();
-    
-    if (!mounted) return;
+    final isConnected = _printService.isConnected;
     
     if (isConnected) {
       // Already connected, print directly
       _printReceipt(transaction);
     } else {
       // Show printer selection dialog
+      if (!mounted) return;
       final result = await showDialog<bool>(
         context: this.context,
         builder: (dialogContext) => PrinterDialog(

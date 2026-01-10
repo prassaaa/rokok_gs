@@ -1,38 +1,85 @@
-import 'package:blue_thermal_printer/blue_thermal_printer.dart';
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/transaction.dart';
 
 /// Service untuk print struk via Bluetooth thermal printer
 class BluetoothPrintService {
-  final BlueThermalPrinter _printer = BlueThermalPrinter.instance;
+  BluetoothDevice? _connectedDevice;
+  BluetoothCharacteristic? _writeCharacteristic;
   
-  /// Check if Bluetooth is available
+  /// Check if Bluetooth is available and on
   Future<bool> isBluetoothAvailable() async {
-    return await _printer.isAvailable ?? false;
+    try {
+      return await FlutterBluePlus.isSupported;
+    } catch (e) {
+      debugPrint('Error checking Bluetooth: $e');
+      return false;
+    }
+  }
+  
+  /// Check if Bluetooth is on
+  Future<bool> isBluetoothOn() async {
+    try {
+      final state = await FlutterBluePlus.adapterState.first;
+      return state == BluetoothAdapterState.on;
+    } catch (e) {
+      return false;
+    }
   }
   
   /// Check if connected to printer
-  Future<bool> isConnected() async {
-    return await _printer.isConnected ?? false;
-  }
+  bool get isConnected => _connectedDevice != null && _writeCharacteristic != null;
   
-  /// Get paired Bluetooth devices
+  /// Get bonded/paired devices
   Future<List<BluetoothDevice>> getPairedDevices() async {
     try {
-      return await _printer.getBondedDevices();
+      // Get system devices (bonded devices) - requires service UUIDs for filtering
+      final devices = await FlutterBluePlus.systemDevices([]);
+      return devices;
     } catch (e) {
       debugPrint('Error getting paired devices: $e');
       return [];
     }
   }
   
+  /// Scan for nearby Bluetooth devices
+  Stream<List<ScanResult>> scanDevices() {
+    FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
+    return FlutterBluePlus.scanResults;
+  }
+  
+  /// Stop scanning
+  Future<void> stopScan() async {
+    await FlutterBluePlus.stopScan();
+  }
+  
   /// Connect to a Bluetooth device
   Future<bool> connect(BluetoothDevice device) async {
     try {
-      await _printer.connect(device);
-      return true;
+      await device.connect(timeout: const Duration(seconds: 10));
+      
+      // Discover services
+      final services = await device.discoverServices();
+      
+      // Find writable characteristic (common for thermal printers)
+      for (final service in services) {
+        for (final characteristic in service.characteristics) {
+          if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
+            _writeCharacteristic = characteristic;
+            _connectedDevice = device;
+            debugPrint('Connected to ${device.platformName}');
+            return true;
+          }
+        }
+      }
+      
+      debugPrint('No writable characteristic found');
+      return false;
     } catch (e) {
       debugPrint('Error connecting to device: $e');
       return false;
@@ -42,79 +89,117 @@ class BluetoothPrintService {
   /// Disconnect from printer
   Future<void> disconnect() async {
     try {
-      await _printer.disconnect();
+      await _connectedDevice?.disconnect();
+      _connectedDevice = null;
+      _writeCharacteristic = null;
     } catch (e) {
       debugPrint('Error disconnecting: $e');
     }
   }
   
+  /// Print raw bytes to printer
+  Future<bool> _printBytes(List<int> bytes) async {
+    if (_writeCharacteristic == null) return false;
+    
+    try {
+      // Split into chunks (BLE has MTU limit)
+      const chunkSize = 100;
+      for (var i = 0; i < bytes.length; i += chunkSize) {
+        final end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
+        final chunk = bytes.sublist(i, end);
+        await _writeCharacteristic!.write(chunk, withoutResponse: true);
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error printing: $e');
+      return false;
+    }
+  }
+  
   /// Print transaction receipt
   Future<bool> printReceipt(Transaction transaction, {String? storeName, String? storeAddress}) async {
+    if (!isConnected) return false;
+    
     try {
-      final isConnectedNow = await isConnected();
-      if (!isConnectedNow) {
-        return false;
-      }
-      
       final dateFormat = DateFormat('dd/MM/yyyy HH:mm', 'id_ID');
+      final receipt = StringBuffer();
       
-      // Header
-      _printer.printNewLine();
-      _printer.printCustom(storeName ?? 'ROKOK GS', 3, 1); // Size 3, Center
+      // ESC/POS commands
+      const esc = '\x1B';
+      const gs = '\x1D';
+      
+      // Initialize printer
+      receipt.write('$esc@'); // Initialize
+      
+      // Center align
+      receipt.write('${esc}a\x01');
+      
+      // Bold on, double height
+      receipt.write('${esc}E\x01');
+      receipt.write('$gs!\x10');
+      receipt.writeln(storeName ?? 'ROKOK GS');
+      
+      // Normal size
+      receipt.write('$gs!\x00');
+      receipt.write('${esc}E\x00');
+      
       if (storeAddress != null) {
-        _printer.printCustom(storeAddress, 1, 1);
+        receipt.writeln(storeAddress);
       }
-      _printer.printCustom('================================', 1, 1);
-      _printer.printNewLine();
+      receipt.writeln('================================');
+      receipt.writeln('');
+      
+      // Left align
+      receipt.write('${esc}a\x00');
       
       // Invoice info
-      _printer.printLeftRight('No. Invoice:', transaction.invoiceNumber ?? '#${transaction.id}', 1);
-      _printer.printLeftRight('Tanggal:', dateFormat.format(transaction.transactionDate), 1);
-      _printer.printLeftRight('Kasir:', transaction.salesName ?? '-', 1);
-      _printer.printLeftRight('Pelanggan:', transaction.customerName ?? 'Umum', 1);
-      
-      _printer.printCustom('--------------------------------', 1, 1);
+      receipt.writeln('No. Invoice: ${transaction.invoiceNumber ?? '#${transaction.id}'}');
+      receipt.writeln('Tanggal    : ${dateFormat.format(transaction.transactionDate)}');
+      receipt.writeln('Sales      : ${transaction.salesName ?? '-'}');
+      receipt.writeln('Pelanggan  : ${transaction.customerName ?? 'Umum'}');
+      receipt.writeln('--------------------------------');
       
       // Items
       for (final item in transaction.items) {
-        _printer.printCustom(item.productName, 1, 0); // Left align
-        _printer.printLeftRight(
-          '  ${item.quantity} x ${_formatCurrency(item.price)}',
-          _formatCurrency(item.subtotal),
-          1,
-        );
+        receipt.writeln(item.productName);
+        receipt.writeln('  ${item.quantity} x ${_formatCurrency(item.price).padLeft(10)} = ${_formatCurrency(item.subtotal).padLeft(10)}');
       }
       
-      _printer.printCustom('--------------------------------', 1, 1);
+      receipt.writeln('--------------------------------');
       
       // Totals
-      _printer.printLeftRight('Subtotal:', _formatCurrency(transaction.subtotal), 1);
+      receipt.writeln('Subtotal${_formatCurrency(transaction.subtotal).padLeft(24)}');
       
       if (transaction.hasDiscount) {
-        _printer.printLeftRight('Diskon:', '- ${_formatCurrency(transaction.discount)}', 1);
+        receipt.writeln('Diskon${('- ${_formatCurrency(transaction.discount)}').padLeft(26)}');
       }
       
-      if (transaction.tax > 0) {
-        _printer.printLeftRight('Pajak:', _formatCurrency(transaction.tax), 1);
-      }
+      receipt.writeln('================================');
       
-      _printer.printCustom('================================', 1, 1);
-      _printer.printLeftRight('TOTAL:', _formatCurrency(transaction.total), 2); // Size 2
-      _printer.printCustom('================================', 1, 1);
+      // Bold total
+      receipt.write('${esc}E\x01');
+      receipt.writeln('TOTAL${_formatCurrency(transaction.total).padLeft(27)}');
+      receipt.write('${esc}E\x00');
       
-      // Payment method
-      _printer.printLeftRight('Pembayaran:', _getPaymentMethodText(transaction.paymentMethod), 1);
+      receipt.writeln('================================');
+      receipt.writeln('Pembayaran : ${_getPaymentMethodText(transaction.paymentMethod)}');
+      receipt.writeln('');
       
-      _printer.printNewLine();
+      // Center align footer
+      receipt.write('${esc}a\x01');
+      receipt.writeln('Terima Kasih');
+      receipt.writeln('Atas Kunjungan Anda');
+      receipt.writeln('');
+      receipt.writeln('');
+      receipt.writeln('');
       
-      // Footer
-      _printer.printCustom('Terima Kasih', 2, 1);
-      _printer.printCustom('Atas Kunjungan Anda', 1, 1);
-      _printer.printNewLine();
-      _printer.printNewLine();
-      _printer.printNewLine();
+      // Cut paper (if supported)
+      receipt.write('${gs}V\x00');
       
-      return true;
+      // Convert to bytes and print
+      final bytes = utf8.encode(receipt.toString());
+      return await _printBytes(bytes);
     } catch (e) {
       debugPrint('Error printing receipt: $e');
       return false;

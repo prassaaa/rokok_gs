@@ -1,5 +1,7 @@
-import 'package:blue_thermal_printer/blue_thermal_printer.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../../core/services/bluetooth_print_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -20,19 +22,29 @@ class PrinterDialog extends StatefulWidget {
 }
 
 class _PrinterDialogState extends State<PrinterDialog> {
-  List<BluetoothDevice> _devices = [];
+  List<BluetoothDevice> _pairedDevices = [];
+  List<ScanResult> _scanResults = [];
   bool _isLoading = true;
+  bool _isScanning = false;
   bool _isConnecting = false;
   String? _error;
-  BluetoothDevice? _connectedDevice;
+  BluetoothDevice? _connectingDevice;
+  StreamSubscription<List<ScanResult>>? _scanSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadDevices();
+    _initialize();
   }
 
-  Future<void> _loadDevices() async {
+  @override
+  void dispose() {
+    _scanSubscription?.cancel();
+    widget.printService.stopScan();
+    super.dispose();
+  }
+
+  Future<void> _initialize() async {
     setState(() {
       _isLoading = true;
       _error = null;
@@ -42,23 +54,31 @@ class _PrinterDialogState extends State<PrinterDialog> {
       final isAvailable = await widget.printService.isBluetoothAvailable();
       if (!isAvailable) {
         setState(() {
-          _error = 'Bluetooth tidak tersedia';
+          _error = 'Bluetooth tidak tersedia di perangkat ini';
           _isLoading = false;
         });
         return;
       }
 
-      final devices = await widget.printService.getPairedDevices();
-      final isConnected = await widget.printService.isConnected();
+      final isOn = await widget.printService.isBluetoothOn();
+      if (!isOn) {
+        setState(() {
+          _error = 'Bluetooth tidak aktif. Silakan aktifkan Bluetooth.';
+          _isLoading = false;
+        });
+        return;
+      }
 
+      // Get paired devices
+      final paired = await widget.printService.getPairedDevices();
+      
       setState(() {
-        _devices = devices;
+        _pairedDevices = paired;
         _isLoading = false;
-        if (isConnected && devices.isNotEmpty) {
-          // Try to find connected device
-          _connectedDevice = devices.first;
-        }
       });
+
+      // Start scanning for nearby devices
+      _startScan();
     } catch (e) {
       setState(() {
         _error = 'Gagal memuat perangkat: $e';
@@ -67,36 +87,64 @@ class _PrinterDialogState extends State<PrinterDialog> {
     }
   }
 
+  void _startScan() {
+    setState(() {
+      _isScanning = true;
+      _scanResults = [];
+    });
+
+    _scanSubscription?.cancel();
+    _scanSubscription = widget.printService.scanDevices().listen((results) {
+      setState(() {
+        // Filter to show only devices with names (likely printers)
+        _scanResults = results.where((r) => 
+          r.device.platformName.isNotEmpty
+        ).toList();
+      });
+    });
+
+    // Stop scan after timeout
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    });
+  }
+
   Future<void> _connectToDevice(BluetoothDevice device) async {
     setState(() {
       _isConnecting = true;
+      _connectingDevice = device;
+      _error = null;
     });
 
     try {
       // Disconnect first if already connected
-      final isConnected = await widget.printService.isConnected();
-      if (isConnected) {
+      if (widget.printService.isConnected) {
         await widget.printService.disconnect();
       }
 
       final success = await widget.printService.connect(device);
       
       if (success) {
-        setState(() {
-          _connectedDevice = device;
-          _isConnecting = false;
-        });
         widget.onConnected();
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       } else {
         setState(() {
-          _error = 'Gagal terhubung ke ${device.name}';
+          _error = 'Gagal terhubung ke ${device.platformName}';
           _isConnecting = false;
+          _connectingDevice = null;
         });
       }
     } catch (e) {
       setState(() {
         _error = 'Error: $e';
         _isConnecting = false;
+        _connectingDevice = null;
       });
     }
   }
@@ -113,6 +161,7 @@ class _PrinterDialogState extends State<PrinterDialog> {
       ),
       content: SizedBox(
         width: double.maxFinite,
+        height: 400,
         child: _buildContent(),
       ),
       actions: [
@@ -120,10 +169,11 @@ class _PrinterDialogState extends State<PrinterDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Tutup'),
         ),
-        if (_connectedDevice != null)
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Print Sekarang'),
+        if (!_isScanning && !_isLoading)
+          TextButton.icon(
+            onPressed: _startScan,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('Scan Ulang'),
           ),
       ],
     );
@@ -131,22 +181,20 @@ class _PrinterDialogState extends State<PrinterDialog> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
       return Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, color: AppColors.error, size: 48),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 48),
           const SizedBox(height: 12),
           Text(_error!, textAlign: TextAlign.center),
           const SizedBox(height: 16),
           TextButton.icon(
-            onPressed: _loadDevices,
+            onPressed: _initialize,
             icon: const Icon(Icons.refresh),
             label: const Text('Coba Lagi'),
           ),
@@ -154,85 +202,82 @@ class _PrinterDialogState extends State<PrinterDialog> {
       );
     }
 
-    if (_devices.isEmpty) {
-      return Column(
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.bluetooth_disabled, color: Colors.grey[400], size: 48),
-          const SizedBox(height: 12),
-          const Text(
-            'Tidak ada printer yang dipasangkan.\nPasangkan printer di pengaturan Bluetooth.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: _loadDevices,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_connectedDevice != null)
-          Container(
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+          // Paired devices section
+          if (_pairedDevices.isNotEmpty) ...[
+            const Text(
+              'Perangkat Tersimpan:',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+            const SizedBox(height: 8),
+            ..._pairedDevices.map((device) => _buildDeviceTile(device)),
+            const Divider(height: 24),
+          ],
+          
+          // Scanned devices section
+          Row(
+            children: [
+              const Text(
+                'Perangkat Terdekat:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (_isScanning) ...[
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Terhubung: ${_connectedDevice!.name}',
-                    style: const TextStyle(color: AppColors.success),
-                  ),
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ],
-            ),
+            ],
           ),
-        const Text(
-          'Perangkat Tersedia:',
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        ListView.builder(
-          shrinkWrap: true,
-          itemCount: _devices.length,
-          itemBuilder: (context, index) {
-            final device = _devices[index];
-            final isConnected = _connectedDevice?.address == device.address;
-            
-            return ListTile(
-              leading: Icon(
-                Icons.print,
-                color: isConnected ? AppColors.success : AppColors.textSecondary,
+          const SizedBox(height: 8),
+          
+          if (_scanResults.isEmpty && !_isScanning)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Tidak ada perangkat ditemukan.\nPastikan printer dalam mode pairing.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600]),
               ),
-              title: Text(device.name ?? 'Unknown'),
-              subtitle: Text(device.address ?? ''),
-              trailing: _isConnecting
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : isConnected
-                      ? const Icon(Icons.check, color: AppColors.success)
-                      : const Icon(Icons.bluetooth, color: AppColors.primary),
-              onTap: _isConnecting ? null : () => _connectToDevice(device),
-            );
-          },
-        ),
-      ],
+            )
+          else
+            ..._scanResults.map((result) => _buildDeviceTile(result.device)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceTile(BluetoothDevice device) {
+    final isConnecting = _connectingDevice?.remoteId == device.remoteId;
+    
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        Icons.print,
+        color: isConnecting ? AppColors.primary : AppColors.textSecondary,
+      ),
+      title: Text(
+        device.platformName.isNotEmpty ? device.platformName : 'Unknown Device',
+        style: const TextStyle(fontSize: 14),
+      ),
+      subtitle: Text(
+        device.remoteId.str,
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: isConnecting
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.bluetooth, color: AppColors.primary, size: 20),
+      onTap: _isConnecting ? null : () => _connectToDevice(device),
     );
   }
 }
