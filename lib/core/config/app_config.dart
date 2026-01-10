@@ -24,7 +24,7 @@ class AppConfig {
       case Environment.staging:
         return 'https://staging-api.rokokgs.com';
       case Environment.production:
-        return 'https://rokokgs.kedjora.com';
+        return 'https://gunungsarialami.com';
     }
   }
 
