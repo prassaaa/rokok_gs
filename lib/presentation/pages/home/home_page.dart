@@ -363,6 +363,12 @@ class _HomePageState extends State<HomePage> {
         route: '/transactions',
       ),
       _MenuItem(
+        icon: Icons.fact_check_outlined,
+        label: 'Kunjungan',
+        color: Colors.purple,
+        route: '/visits',
+      ),
+      _MenuItem(
         icon: Icons.inventory_2_outlined,
         label: 'Stok',
         color: AppColors.warning,

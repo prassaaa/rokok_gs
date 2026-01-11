@@ -33,4 +33,10 @@ class ApiConstants {
   // ==================== Areas ====================
   static const String areas = '/areas';
   static String areaDetail(int id) => '/areas/$id';
+
+  // ==================== Visits ====================
+  static const String visits = '/visits';
+  static String visitDetail(int id) => '/visits/$id';
+  static String visitsBySales(int salesId) => '/visits/sales/$salesId';
+  static const String visitStatistics = '/visits/statistics';
 }

@@ -9,6 +9,7 @@ import '../../presentation/bloc/cart/cart_bloc.dart';
 import '../../presentation/bloc/product/product_bloc.dart';
 import '../../presentation/bloc/stock/stock_bloc.dart';
 import '../../presentation/bloc/transaction/transaction_bloc.dart';
+import '../../presentation/bloc/visit/visit_bloc.dart';
 import '../../presentation/pages/area/area_list_page.dart';
 import '../../presentation/pages/auth/login_page.dart';
 import '../../presentation/pages/auth/register_page.dart';
@@ -22,14 +23,17 @@ import '../../presentation/pages/stock/stock_list_page.dart';
 import '../../presentation/pages/transaction/transaction_detail_page.dart';
 import '../../presentation/pages/transaction/transaction_form_page.dart';
 import '../../presentation/pages/transaction/transaction_list_page.dart';
+import '../../presentation/pages/visit/visit_detail_page.dart';
+import '../../presentation/pages/visit/visit_form_page.dart';
+import '../../presentation/pages/visit/visit_list_page.dart';
 
 /// App Router Configuration
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
-  
+
   // Auth BLoC instance for routing
   static late AuthBloc _authBloc;
-  
+
   static void init(AuthBloc authBloc) {
     _authBloc = authBloc;
   }
@@ -46,7 +50,7 @@ class AppRouter {
         name: 'splash',
         builder: (context, state) => const SplashPage(),
       ),
-      
+
       // Auth Routes
       GoRoute(
         path: '/login',
@@ -58,7 +62,7 @@ class AppRouter {
         name: 'register',
         builder: (context, state) => const RegisterPage(),
       ),
-      
+
       // Home
       GoRoute(
         path: '/home',
@@ -146,6 +150,37 @@ class AppRouter {
         ),
       ),
 
+      // Visits
+      GoRoute(
+        path: '/visits',
+        name: 'visits',
+        builder: (context, state) => BlocProvider(
+          create: (context) => sl<VisitBloc>(),
+          child: const VisitListPage(),
+        ),
+        routes: [
+          GoRoute(
+            path: 'new',
+            name: 'new-visit',
+            builder: (context, state) => BlocProvider(
+              create: (context) => sl<VisitBloc>(),
+              child: const VisitFormPage(),
+            ),
+          ),
+          GoRoute(
+            path: ':id',
+            name: 'visit-detail',
+            builder: (context, state) {
+              final id = int.parse(state.pathParameters['id']!);
+              return BlocProvider(
+                create: (context) => sl<VisitBloc>(),
+                child: VisitDetailPage(visitId: id),
+              );
+            },
+          ),
+        ],
+      ),
+
       // Profile
       GoRoute(
         path: '/profile',
@@ -188,7 +223,8 @@ class AppRouter {
   static String? _guardRoute(BuildContext context, GoRouterState state) {
     final authState = _authBloc.state;
     final isLoggedIn = authState.isAuthenticated;
-    final isAuthRoute = state.matchedLocation == '/login' ||
+    final isAuthRoute =
+        state.matchedLocation == '/login' ||
         state.matchedLocation == '/register';
     final isSplash = state.matchedLocation == '/splash';
 
@@ -225,4 +261,7 @@ class Routes {
   static const newTransaction = 'new-transaction';
   static const commissions = 'commissions';
   static const areas = 'areas';
+  static const visits = 'visits';
+  static const visitDetail = 'visit-detail';
+  static const newVisit = 'new-visit';
 }

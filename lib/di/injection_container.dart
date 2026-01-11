@@ -58,6 +58,17 @@ import '../domain/usecases/area/get_areas.dart';
 import '../domain/usecases/area/get_area_by_id.dart';
 import '../presentation/bloc/area/area_bloc.dart';
 
+// Visit
+import '../data/datasources/remote/visit_remote_datasource.dart';
+import '../data/repositories/visit_repository_impl.dart';
+import '../domain/repositories/visit_repository.dart';
+import '../domain/usecases/visit/create_visit.dart';
+import '../domain/usecases/visit/get_sales_visits.dart';
+import '../domain/usecases/visit/get_visit_detail.dart';
+import '../domain/usecases/visit/get_visit_statistics.dart';
+import '../domain/usecases/visit/get_visits.dart';
+import '../presentation/bloc/visit/visit_bloc.dart';
+
 // Services
 import '../core/services/bluetooth_print_service.dart';
 
@@ -67,12 +78,14 @@ Future<void> initDependencies() async {
   // ========= EXTERNAL =========
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
-  
-  sl.registerLazySingleton(() => const FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true),
-        iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-      ));
-  
+
+  sl.registerLazySingleton(
+    () => const FlutterSecureStorage(
+      aOptions: AndroidOptions(encryptedSharedPreferences: true),
+      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    ),
+  );
+
   sl.registerLazySingleton(() => Connectivity());
 
   // ========= SERVICES =========
@@ -92,7 +105,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(sl<ApiClient>()),
   );
-  
+
   sl.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(sl<FlutterSecureStorage>()),
   );
@@ -115,6 +128,11 @@ Future<void> initDependencies() async {
   // Area
   sl.registerLazySingleton<AreaRemoteDataSource>(
     () => AreaRemoteDataSourceImpl(sl<ApiClient>()),
+  );
+
+  // Visit
+  sl.registerLazySingleton<VisitRemoteDataSource>(
+    () => VisitRemoteDataSourceImpl(sl<ApiClient>()),
   );
 
   // ========= REPOSITORIES =========
@@ -146,6 +164,12 @@ Future<void> initDependencies() async {
       networkInfo: sl<NetworkInfo>(),
     ),
   );
+  sl.registerLazySingleton<VisitRepository>(
+    () => VisitRepositoryImpl(
+      remoteDataSource: sl<VisitRemoteDataSource>(),
+      networkInfo: sl<NetworkInfo>(),
+    ),
+  );
 
   sl.registerLazySingleton<AreaRepository>(
     () => AreaRepositoryImpl(sl<AreaRemoteDataSource>()),
@@ -163,22 +187,39 @@ Future<void> initDependencies() async {
 
   // Product
   sl.registerLazySingleton(() => GetProductsUseCase(sl<ProductRepository>()));
-  sl.registerLazySingleton(() => GetProductDetailUseCase(sl<ProductRepository>()));
+  sl.registerLazySingleton(
+    () => GetProductDetailUseCase(sl<ProductRepository>()),
+  );
 
   // Transaction
   sl.registerLazySingleton(() => GetTransactions(sl<TransactionRepository>()));
-  sl.registerLazySingleton(() => GetTransactionDetail(sl<TransactionRepository>()));
-  sl.registerLazySingleton(() => GetSalesTransactions(sl<TransactionRepository>()));
-  sl.registerLazySingleton(() => CreateTransaction(sl<TransactionRepository>()));
+  sl.registerLazySingleton(
+    () => GetTransactionDetail(sl<TransactionRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetSalesTransactions(sl<TransactionRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => CreateTransaction(sl<TransactionRepository>()),
+  );
 
   // Stock
   sl.registerLazySingleton(() => GetStocksUseCase(sl<StockRepository>()));
-  sl.registerLazySingleton(() => GetLowStocksUseCase(sl<StockRepository>()));
-  sl.registerLazySingleton(() => GetStockByProductUseCase(sl<StockRepository>()));
+  // registerLazySingleton(() => GetLowStocksUseCase(sl<StockRepository>()));
+  sl.registerLazySingleton(
+    () => GetStockByProductUseCase(sl<StockRepository>()),
+  );
 
   // Area
   sl.registerLazySingleton(() => GetAreas(sl<AreaRepository>()));
   sl.registerLazySingleton(() => GetAreaById(sl<AreaRepository>()));
+
+  // Visit
+  sl.registerLazySingleton(() => GetVisits(sl<VisitRepository>()));
+  sl.registerLazySingleton(() => GetVisitDetail(sl<VisitRepository>()));
+  sl.registerLazySingleton(() => GetSalesVisits(sl<VisitRepository>()));
+  sl.registerLazySingleton(() => CreateVisit(sl<VisitRepository>()));
+  sl.registerLazySingleton(() => GetVisitStatistics(sl<VisitRepository>()));
 
   // ========= BLOCS =========
   sl.registerFactory(
@@ -209,9 +250,7 @@ Future<void> initDependencies() async {
   );
 
   sl.registerFactory(
-    () => CartBloc(
-      createTransaction: sl<CreateTransaction>(),
-    ),
+    () => CartBloc(createTransaction: sl<CreateTransaction>()),
   );
 
   sl.registerFactory(
@@ -224,9 +263,15 @@ Future<void> initDependencies() async {
   );
 
   sl.registerFactory(
-    () => AreaBloc(
-      getAreas: sl<GetAreas>(),
-      getAreaById: sl<GetAreaById>(),
+    () => AreaBloc(getAreas: sl<GetAreas>(), getAreaById: sl<GetAreaById>()),
+  );
+
+  sl.registerFactory(
+    () => VisitBloc(
+      getVisits: sl<GetVisits>(),
+      getVisitDetail: sl<GetVisitDetail>(),
+      getSalesVisits: sl<GetSalesVisits>(),
+      createVisit: sl<CreateVisit>(),
     ),
   );
 }
