@@ -548,7 +548,6 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
       final success = await _printService.printReceipt(
         transaction,
         storeName: 'ROKOK GS',
-        storeAddress: 'Perumahan grand permata residence blok J17 dusun cakruk desa tales kec Ngadiluwih kabupaten Kediri',
       );
 
       if (mounted) {
