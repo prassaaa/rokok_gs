@@ -118,7 +118,7 @@ class BluetoothPrintService {
   }
   
   /// Print transaction receipt
-  Future<bool> printReceipt(Transaction transaction, {String? storeName, String? storeAddress}) async {
+  Future<bool> printReceipt(Transaction transaction, {String? storeName }) async {
     if (!isConnected) return false;
     
     try {
@@ -139,14 +139,12 @@ class BluetoothPrintService {
       receipt.write('${esc}E\x01');
       receipt.write('$gs!\x10');
       receipt.writeln(storeName ?? 'ROKOK GS');
-      
+
       // Normal size
       receipt.write('$gs!\x00');
       receipt.write('${esc}E\x00');
-      
-      if (storeAddress != null) {
-        receipt.writeln(storeAddress);
-      }
+
+      receipt.writeln('Gunung Sari Sigaret Kretek');
       receipt.writeln('================================');
       receipt.writeln('');
       
@@ -188,8 +186,7 @@ class BluetoothPrintService {
       
       // Center align footer
       receipt.write('${esc}a\x01');
-      receipt.writeln('Terima Kasih');
-      receipt.writeln('Atas Kunjungan Anda');
+      receipt.writeln('Terima Kasih Atas Kerjasamanya');
       receipt.writeln('');
       receipt.writeln('');
       receipt.writeln('');
