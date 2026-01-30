@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/transaction.dart';
+import '../constants/asset_constants.dart';
 
 /// Service untuk print struk via Bluetooth thermal printer
 class BluetoothPrintService {
@@ -100,7 +103,7 @@ class BluetoothPrintService {
   /// Print raw bytes to printer
   Future<bool> _printBytes(List<int> bytes) async {
     if (_writeCharacteristic == null) return false;
-    
+
     try {
       // Split into chunks (BLE has MTU limit)
       const chunkSize = 100;
@@ -116,25 +119,127 @@ class BluetoothPrintService {
       return false;
     }
   }
+
+  /// Load and process logo image for thermal printing
+  Future<Uint8List?> _loadLogoImage() async {
+    try {
+      final ByteData data = await rootBundle.load(AssetConstants.logo);
+      final Uint8List bytes = data.buffer.asUint8List();
+      return bytes;
+    } catch (e) {
+      debugPrint('Error loading logo: $e');
+      return null;
+    }
+  }
+
+  /// Convert image to ESC/POS bitmap format for thermal printer
+  /// Thermal printers typically support 58mm (384 dots) or 80mm (576 dots) width
+  List<int> _imageToEscPosBitmap(img.Image image, {int printerWidth = 384}) {
+    // Resize image to fit printer width while maintaining aspect ratio
+    final int targetWidth = printerWidth;
+    final double aspectRatio = image.height / image.width;
+    final int targetHeight = (targetWidth * aspectRatio).round();
+
+    // Resize and convert to grayscale
+    img.Image resized = img.copyResize(image, width: targetWidth, height: targetHeight);
+    img.Image grayscale = img.grayscale(resized);
+
+    // Ensure height is multiple of 8 for printing
+    final int printHeight = ((grayscale.height + 7) ~/ 8) * 8;
+
+    List<int> bytes = [];
+
+    // ESC/POS command for bitmap mode
+    // GS v 0 - Print raster bit image
+    final int widthBytes = (targetWidth + 7) ~/ 8;
+
+    bytes.add(0x1D); // GS
+    bytes.add(0x76); // v
+    bytes.add(0x30); // 0
+    bytes.add(0x00); // Normal mode (1:1)
+    bytes.add(widthBytes & 0xFF); // xL
+    bytes.add((widthBytes >> 8) & 0xFF); // xH
+    bytes.add(printHeight & 0xFF); // yL
+    bytes.add((printHeight >> 8) & 0xFF); // yH
+
+    // Convert image to bitmap data
+    for (int y = 0; y < printHeight; y++) {
+      for (int xByte = 0; xByte < widthBytes; xByte++) {
+        int byte = 0;
+        for (int bit = 0; bit < 8; bit++) {
+          final int x = xByte * 8 + bit;
+          if (x < targetWidth && y < grayscale.height) {
+            final pixel = grayscale.getPixel(x, y);
+            // Get luminance (grayscale value)
+            final int luminance = img.getLuminance(pixel).toInt();
+            // Threshold: if dark enough, set bit (print dot)
+            if (luminance < 128) {
+              byte |= (0x80 >> bit);
+            }
+          }
+        }
+        bytes.add(byte);
+      }
+    }
+
+    return bytes;
+  }
+
+  /// Print logo image
+  Future<bool> _printLogo() async {
+    try {
+      final logoBytes = await _loadLogoImage();
+      if (logoBytes == null) return false;
+
+      // Decode image
+      final img.Image? image = img.decodeImage(logoBytes);
+      if (image == null) {
+        debugPrint('Failed to decode logo image');
+        return false;
+      }
+
+      // Convert to ESC/POS bitmap (use 200 width for a reasonable logo size)
+      final bitmapBytes = _imageToEscPosBitmap(image, printerWidth: 200);
+
+      // Center the logo
+      List<int> centerCommand = [0x1B, 0x61, 0x01]; // ESC a 1 (center)
+      await _printBytes(centerCommand);
+
+      // Print the bitmap
+      await _printBytes(bitmapBytes);
+
+      // Add line feed after logo
+      await _printBytes([0x0A]);
+
+      return true;
+    } catch (e) {
+      debugPrint('Error printing logo: $e');
+      return false;
+    }
+  }
   
   /// Print transaction receipt
-  Future<bool> printReceipt(Transaction transaction, {String? storeName }) async {
+  Future<bool> printReceipt(Transaction transaction, {String? storeName}) async {
     if (!isConnected) return false;
-    
+
     try {
       final dateFormat = DateFormat('dd/MM/yyyy HH:mm', 'id_ID');
-      final receipt = StringBuffer();
-      
+
       // ESC/POS commands
       const esc = '\x1B';
       const gs = '\x1D';
-      
+
       // Initialize printer
-      receipt.write('$esc@'); // Initialize
-      
+      await _printBytes(utf8.encode('$esc@'));
+
+      // Print logo at the top
+      await _printLogo();
+
+      final receipt = StringBuffer();
+
       // Center align
       receipt.write('${esc}a\x01');
-      
+
       // Bold on, double height
       receipt.write('${esc}E\x01');
       receipt.write('$gs!\x10');

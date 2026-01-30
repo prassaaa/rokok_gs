@@ -75,6 +75,9 @@ dependencies:
   # Bluetooth Thermal Printer
   flutter_blue_plus: ^1.35.5
 
+  # Image Processing (for printing logo)
+  image: ^4.3.0
+
   # Toast & Dialogs
   fluttertoast: ^8.2.8
 
